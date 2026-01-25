@@ -355,7 +355,7 @@ stellar contract deploy \
 2. Enter your phone number or email
 3. Verify with OTP
 4. Choose your Universal ID (e.g., `alice`)
-5. A Stellar wallet is automatically created and funded
+5. A Stellar wallet is automatically created using Stellar SDK  and funded via friendbot
 
 ### Sending Money
 1. Go to Dashboard > Send
