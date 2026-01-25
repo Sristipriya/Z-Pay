@@ -403,9 +403,6 @@ stellar contract deploy \
 
 Contributions are welcome! Please read our contributing guidelines and submit PRs.
 
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
 
 ## Links
 
