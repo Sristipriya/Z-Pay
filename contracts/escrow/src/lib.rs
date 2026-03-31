@@ -17,7 +17,7 @@ pub struct Escrow {
 }
 
 #[contracttype]
-pub enum DataKy {
+pub enum DataKey {
     Escrow(String),
     EscrowCount,
 }
