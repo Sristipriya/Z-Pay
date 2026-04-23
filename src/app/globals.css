@@ -382,3 +382,111 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ===== GREEN BELT: MOBILE RESPONSIVE ===== */
+
+/* Base touch targets */
+button, a, [role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Fluid typography — no text below 14px on mobile */
+body {
+  font-size: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+}
+
+/* Payment card — full width on mobile */
+.payment-card {
+  padding: clamp(1rem, 3vw, 2rem);
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+}
+
+/* Wallet address truncation on mobile */
+.wallet-address {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+}
+
+/* Escrow form — single column on mobile */
+.escrow-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+/* Contract cards — full width on mobile */
+.contract-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Dashboard grid — single column on mobile */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+/* Sidebar — hide on mobile, show bottom nav */
+@media (max-width: 767px) {
+  .sidebar {
+    display: none;
+  }
+
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: var(--background);
+    border-top: 1px solid var(--border);
+    padding: 0.5rem;
+    justify-content: space-around;
+  }
+
+  .wallet-address {
+    max-width: 120px;
+  }
+
+  .main-content {
+    padding-bottom: 5rem; /* Space for bottom nav */
+  }
+}
+
+/* Tablet and up */
+@media (min-width: 768px) {
+  .wallet-address {
+    max-width: 100%;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .escrow-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sidebar {
+    display: flex;
+  }
+
+  .bottom-nav {
+    display: none;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+/* ===== END GREEN BELT MOBILE ===== */
