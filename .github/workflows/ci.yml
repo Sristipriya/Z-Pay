@@ -49,25 +49,13 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Deploy to Vercel
+      - name: Trigger Vercel deployment via Deploy Hook
         run: |
-          npx vercel@latest --prod --yes \
-            --token=${{ secrets.VERCEL_TOKEN }} \
-            --build-env NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }} \
-            --build-env NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }} \
-            --build-env NEXT_PUBLIC_NETWORK=testnet \
-            --build-env NEXT_PUBLIC_ESCROW_CONTRACT_ID=${{ secrets.NEXT_PUBLIC_ESCROW_CONTRACT_ID }} \
-            --build-env NEXT_PUBLIC_TOKEN_CONTRACT_ID=${{ secrets.NEXT_PUBLIC_TOKEN_CONTRACT_ID }} \
-            --build-env NEXT_PUBLIC_APP_URL=https://expopay.vercel.app
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}")
+          echo "Vercel API response: $response"
+          if [ "$response" != "201" ]; then
+            echo "Deploy hook returned unexpected status: $response"
+            exit 1
+          fi
+          echo "✅ Vercel deployment triggered successfully"
