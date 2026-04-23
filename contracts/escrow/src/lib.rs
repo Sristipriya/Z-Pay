@@ -72,6 +72,7 @@ impl EscrowContract {
             .set(&DataKey::EscrowCount, &(count + 1));
 
         env.events().publish((symbol_short!("created"),), client);
+        env.storage().instance().extend_ttl(100, 100);
     }
 
     /// Fund the escrow — inter-contract call: client → escrow contract via EXPO token transfer.
@@ -102,6 +103,7 @@ impl EscrowContract {
         escrow.funded = true;
         env.storage().instance().set(&key, &escrow);
         env.events().publish((symbol_short!("funded"),), escrow.amount);
+        env.storage().instance().extend_ttl(100, 100);
     }
 
     /// Freelancer marks work as delivered.
@@ -127,6 +129,7 @@ impl EscrowContract {
         escrow.delivered = true;
         env.storage().instance().set(&key, &escrow);
         env.events().publish((symbol_short!("deliver"),), true);
+        env.storage().instance().extend_ttl(100, 100);
     }
 
     /// Client releases funds to freelancer — inter-contract call: escrow → EXPO token contract.
@@ -164,6 +167,7 @@ impl EscrowContract {
         env.storage().instance().set(&key, &escrow);
         env.events()
             .publish((symbol_short!("release"),), escrow.amount);
+        env.storage().instance().extend_ttl(100, 100);
     }
 
     /// Cancel escrow and return EXPO tokens to client via inter-contract call.
@@ -198,10 +202,11 @@ impl EscrowContract {
         env.storage().instance().set(&key, &escrow);
         env.events()
             .publish((symbol_short!("cancel"),), escrow.client.clone());
+        env.storage().instance().extend_ttl(100, 100);
     }
 
-    /// Raise a dispute (called by client or freelancer).
-    pub fn dispute(env: Env, escrow_id: String) {
+    /// Raise a dispute — either client OR freelancer can call this.
+    pub fn dispute(env: Env, escrow_id: String, caller: Address) {
         let key = DataKey::Escrow(escrow_id);
         let mut escrow: Escrow = env
             .storage()
@@ -209,9 +214,11 @@ impl EscrowContract {
             .get(&key)
             .expect("Escrow not found");
 
-        // Either party can raise a dispute
-        let caller_is_client = escrow.client.clone();
-        caller_is_client.require_auth();
+        // Either client or freelancer can dispute
+        if caller != escrow.client && caller != escrow.freelancer {
+            panic!("Only client or freelancer can dispute");
+        }
+        caller.require_auth();
 
         if !escrow.funded {
             panic!("Not funded");
@@ -222,10 +229,14 @@ impl EscrowContract {
         if escrow.cancelled {
             panic!("Escrow has been cancelled");
         }
+        if escrow.disputed {
+            panic!("Already disputed");
+        }
 
         escrow.disputed = true;
         env.storage().instance().set(&key, &escrow);
         env.events().publish((symbol_short!("dispute"),), true);
+        env.storage().instance().extend_ttl(100, 100);
     }
 
     /// Arbiter resolves dispute — inter-contract call to distribute EXPO tokens.
@@ -266,14 +277,17 @@ impl EscrowContract {
         env.storage().instance().set(&key, &escrow);
         env.events()
             .publish((symbol_short!("resolve"),), pay_freelancer);
+        env.storage().instance().extend_ttl(100, 100);
     }
 
     pub fn get_escrow(env: Env, escrow_id: String) -> Escrow {
+        env.storage().instance().extend_ttl(100, 100);
         let key = DataKey::Escrow(escrow_id);
         env.storage().instance().get(&key).expect("Escrow not found")
     }
 
     pub fn get_escrow_count(env: Env) -> u32 {
+        env.storage().instance().extend_ttl(100, 100);
         env.storage()
             .instance()
             .get(&DataKey::EscrowCount)
@@ -450,11 +464,10 @@ mod tests {
     }
 
     #[test]
-    fn test_dispute_and_resolve_to_freelancer() {
+    fn test_dispute_by_client() {
         let (env, contract_id, token_id, client_addr, freelancer_addr, arbiter_addr) =
             create_test_env();
         let escrow_client = EscrowContractClient::new(&env, &contract_id);
-        let token = TokenClient::new(&env, &token_id);
         let amount = 200_000_000i128;
 
         let escrow_id = String::from_str(&env, "escrow-006");
@@ -467,7 +480,35 @@ mod tests {
             &arbiter_addr,
         );
         escrow_client.fund(&escrow_id);
-        escrow_client.dispute(&escrow_id);
+
+        // Client raises the dispute
+        escrow_client.dispute(&escrow_id, &client_addr);
+
+        let escrow = escrow_client.get_escrow(&escrow_id);
+        assert!(escrow.disputed);
+    }
+
+    #[test]
+    fn test_dispute_and_resolve_to_freelancer() {
+        let (env, contract_id, token_id, client_addr, freelancer_addr, arbiter_addr) =
+            create_test_env();
+        let escrow_client = EscrowContractClient::new(&env, &contract_id);
+        let token = TokenClient::new(&env, &token_id);
+        let amount = 200_000_000i128;
+
+        let escrow_id = String::from_str(&env, "escrow-007");
+        escrow_client.create(
+            &escrow_id,
+            &client_addr,
+            &freelancer_addr,
+            &amount,
+            &token_id,
+            &arbiter_addr,
+        );
+        escrow_client.fund(&escrow_id);
+
+        // Freelancer raises the dispute (new fix — either party can dispute)
+        escrow_client.dispute(&escrow_id, &freelancer_addr);
 
         let freelancer_balance_before = token.balance(&freelancer_addr);
         escrow_client.resolve(&escrow_id, &true);
@@ -488,7 +529,7 @@ mod tests {
         let token = TokenClient::new(&env, &token_id);
         let amount = 150_000_000i128;
 
-        let escrow_id = String::from_str(&env, "escrow-007");
+        let escrow_id = String::from_str(&env, "escrow-008");
         escrow_client.create(
             &escrow_id,
             &client_addr,
@@ -498,7 +539,9 @@ mod tests {
             &arbiter_addr,
         );
         escrow_client.fund(&escrow_id);
-        escrow_client.dispute(&escrow_id);
+
+        // Client raises the dispute
+        escrow_client.dispute(&escrow_id, &client_addr);
 
         let client_balance_before = token.balance(&client_addr);
         escrow_client.resolve(&escrow_id, &false);
