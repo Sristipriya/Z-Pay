@@ -231,8 +231,17 @@ export default function SignupPage() {
           <motion.button
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.7 }}
+            transition={{ duration: 0.8, delay: 0.9 }}
             type="button"
+            onClick={async () => {
+              const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                  redirectTo: `${window.location.origin}/auth/callback`,
+                },
+              });
+              if (error) setError(error.message);
+            }}
             className="w-full h-12 sm:h-14 bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] hover:border-white/[0.12] rounded-full gap-3 font-medium transition-all duration-300 active:scale-[0.98] flex items-center justify-center text-white text-sm sm:text-base"
           >
             <svg className="w-4 sm:w-5 h-4 sm:h-5" viewBox="0 0 24 24">
