@@ -131,8 +131,21 @@ An arbiter will review the evidence and decide. Contact support@expopay.app with
 
     } else {
       // Freelancer: auto-release after timeout OR dispute they raised
+      // CRITICAL FIX: The on-chain smart contract mandates that `release` can ONLY be signed by the payer.
+      // Since this is an auto-claim, the freelancer is initiating it, but the tx will trap and fail on-chain.
+      // Because this platform is custodial (stores stellar_secret), the backend must sign on behalf of the payer.
+      const { data: payerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('stellar_secret')
+        .eq('id', contract.payer_id)
+        .single();
+
+      if (!payerProfile?.stellar_secret) {
+        return NextResponse.json({ error: "Payer's wallet not found. Cannot auto-release on-chain." }, { status: 500 });
+      }
+
       const isAutoRelease = isAutoReleaseEligible && !isDisputed;
-      const txHash        = await releaseEscrow(contract.escrow_id, callerProfile.stellar_secret);
+      const txHash        = await releaseEscrow(contract.escrow_id, payerProfile.stellar_secret);
 
       await supabaseAdmin
         .from('contracts')
