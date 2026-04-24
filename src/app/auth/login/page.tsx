@@ -87,13 +87,13 @@ export default function LoginPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="text-[clamp(2.5rem,10vw,4.5rem)] font-black leading-[0.95] tracking-[-0.04em] mb-3 sm:mb-4"
+              className="text-[clamp(2rem,8vw,3.5rem)] font-black leading-[0.95] tracking-[-0.04em] mb-3 sm:mb-4"
               style={{ fontFamily: 'var(--font-syne)' }}
             >
-              <span className="block bg-gradient-to-r from-[#C694F9] via-[#F5A7C4] to-[#94A1F9] bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-[#C694F9] via-[#F5A7C4] to-[#94A1F9] bg-clip-text text-transparent whitespace-nowrap">
                 Welcome
               </span>
-              <span className="block text-white">
+              <span className="block text-white whitespace-nowrap">
                 Back
               </span>
             </motion.h1>
