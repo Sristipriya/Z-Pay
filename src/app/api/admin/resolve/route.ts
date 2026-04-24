@@ -13,8 +13,7 @@ export async function POST(request: Request) {
 
   // Admin check
   if (!user.email || !ADMIN_EMAILS.includes(user.email)) {
-    // Uncomment for prod security:
-    // return NextResponse.json({ error: 'Forbidden: Admins Only' }, { status: 403 });
+    return NextResponse.json({ error: 'Forbidden: Admins Only' }, { status: 403 });
   }
 
   const { contract_id, resolution } = await request.json();

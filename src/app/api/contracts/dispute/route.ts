@@ -58,18 +58,21 @@ export async function POST(request: Request) {
   // If dispute_after_delivery = true → payer CANNOT self-refund. Arbiter decides.
   const disputeAfterDelivery = isPayer && contract.status === 'delivered';
 
-  const { data: callerProfile } = await supabaseAdmin
+  // CRITICAL FIX: The deployed smart contract strictly requires the Payer to authorize disputes.
+  // When a freelancer disputes, we must sign on behalf of the payer on-chain.
+  const targetId = isFreelancer ? contract.payer_id : user.id;
+  const { data: signerProfile } = await supabaseAdmin
     .from('profiles')
     .select('stellar_secret')
-    .eq('id', user.id)
+    .eq('id', targetId)
     .single();
 
-  if (!callerProfile?.stellar_secret) {
-    return NextResponse.json({ error: 'Wallet not found' }, { status: 404 });
+  if (!signerProfile?.stellar_secret) {
+    return NextResponse.json({ error: 'Wallet not found for on-chain signature' }, { status: 500 });
   }
 
   try {
-    const txHash = await disputeEscrow(contract.escrow_id, callerProfile.stellar_secret);
+    const txHash = await disputeEscrow(contract.escrow_id, signerProfile.stellar_secret);
 
     const { error: updateError } = await supabaseAdmin
       .from('contracts')

@@ -620,10 +620,26 @@ export default function ContractsPage() {
                     <p className="text-sm text-zinc-400 border-t border-white/5 pt-3">{contract.description}</p>
                   )}
 
-                  {contract.dispute_reason && (
+                  {contract.dispute_reason && contract.status === 'disputed' && (
                     <div className="p-3 bg-red-500/10 rounded-xl border border-red-500/20">
                       <p className="text-xs text-red-400 font-bold uppercase mb-1">Dispute Reason</p>
                       <p className="text-sm text-red-300">{contract.dispute_reason}</p>
+                    </div>
+                  )}
+
+                  {/* Arbiter Resolved Banners */}
+                  {contract.disputed_by && contract.status === 'released' && (
+                    <div className="p-3 bg-green-500/10 rounded-xl border border-green-500/20 text-xs text-green-400">
+                      <p className="font-bold mb-1 flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Dispute Resolved</p>
+                      <p className="text-green-500/70">The Arbiter reviewed this dispute and forced the release of funds to the freelancer.</p>
+                      <p className="text-green-500/50 mt-1 italic">&quot;{contract.dispute_reason}&quot;</p>
+                    </div>
+                  )}
+                  {contract.disputed_by && contract.status === 'refunded' && (
+                    <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 text-xs text-blue-400">
+                      <p className="font-bold mb-1 flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Dispute Resolved</p>
+                      <p className="text-blue-500/70">The Arbiter reviewed this dispute and refunded the funds back to the client.</p>
+                      <p className="text-blue-500/50 mt-1 italic">&quot;{contract.dispute_reason}&quot;</p>
                     </div>
                   )}
 

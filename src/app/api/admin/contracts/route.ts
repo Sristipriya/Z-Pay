@@ -11,19 +11,17 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Simple admin check based on email (you can upgrade this to a DB role later)
+  // Simple admin check based on email
   if (!user.email || !ADMIN_EMAILS.includes(user.email)) {
-    // For demo purposes, we will bypass this check if you are testing locally.
-    // In production, uncomment the below return statement to secure it.
-    // return NextResponse.json({ error: 'Forbidden: Admins Only' }, { status: 403 });
+    return NextResponse.json({ error: 'Forbidden: Admins Only' }, { status: 403 });
   }
 
   try {
-    // Fetch all contracts that are currently disputed
+    // Fetch all contracts that are currently disputed OR were previously disputed
     const { data: contracts, error } = await supabaseAdmin
       .from('contracts')
       .select('*')
-      .eq('status', 'disputed')
+      .not('disputed_by', 'is', null) // Fetch anything that was ever disputed
       .order('disputed_at', { ascending: false });
 
     if (error) throw error;

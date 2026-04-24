@@ -22,6 +22,7 @@ interface DisputedContract {
   amount: number;
   currency: string;
   title: string;
+  status: string;
   dispute_reason: string;
   disputed_by: 'payer' | 'freelancer';
   dispute_after_delivery: boolean;
@@ -79,6 +80,9 @@ export default function AdminDashboard() {
     }
   };
 
+  const activeDisputes = contracts.filter(c => c.status === 'disputed');
+  const resolvedDisputes = contracts.filter(c => c.status !== 'disputed');
+
   if (loading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
@@ -114,7 +118,7 @@ export default function AdminDashboard() {
         )}
       </AnimatePresence>
 
-      {contracts.length === 0 ? (
+      {activeDisputes.length === 0 ? (
         <div className="glass-card rounded-2xl p-12 text-center flex flex-col items-center">
           <Scale className="w-12 h-12 text-white/20 mb-4" />
           <h3 className="text-xl font-bold mb-2">No Active Disputes</h3>
@@ -122,7 +126,8 @@ export default function AdminDashboard() {
         </div>
       ) : (
         <div className="space-y-4">
-          {contracts.map((contract) => (
+          <h2 className="text-lg font-bold text-red-400 mb-2">Active Escalations</h2>
+          {activeDisputes.map((contract) => (
             <motion.div key={contract.id} className="glass-card rounded-2xl p-5 border border-red-500/20 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                 <Scale className="w-32 h-32" />
@@ -173,6 +178,32 @@ export default function AdminDashboard() {
                     {actionLoading === contract.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                     Force Refund Client
                   </button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {resolvedDisputes.length > 0 && (
+        <div className="space-y-4 mt-12 pt-8 border-t border-white/10">
+          <h2 className="text-lg font-bold text-zinc-400 mb-2">Resolution History</h2>
+          {resolvedDisputes.map((contract) => (
+            <motion.div key={contract.id} className="glass-card rounded-2xl p-5 border border-white/5 opacity-70">
+              <div className="flex flex-col md:flex-row justify-between gap-6">
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-md font-bold">{contract.title}</h3>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                      contract.status === 'released' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'
+                    }`}>
+                      {contract.status === 'released' ? 'Paid Freelancer' : 'Refunded Client'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-zinc-500">
+                    <User className="w-3 h-3" /> {contract.payer_universal_id} <ArrowRight className="w-3 h-3" /> {contract.freelancer_universal_id}
+                  </div>
+                  <p className="text-xs text-zinc-500 italic mt-2">Dispute reason: &quot;{contract.dispute_reason}&quot;</p>
                 </div>
               </div>
             </motion.div>
