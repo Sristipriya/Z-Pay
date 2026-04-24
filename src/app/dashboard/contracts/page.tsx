@@ -413,7 +413,7 @@ export default function ContractsPage() {
         </div>
         <Button 
           onClick={() => setShowCreate(!showCreate)}
-          className="h-14 bg-[#C694F9] hover:bg-[#C694F9]/90 text-black font-black rounded-xl gap-2"
+          className="h-14 w-full md:w-auto bg-[#C694F9] hover:bg-[#C694F9]/90 text-black font-black rounded-xl gap-2"
         >
           <Plus className="w-5 h-5" /> New Contract
         </Button>
@@ -492,7 +492,7 @@ export default function ContractsPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Amount (XLM)</label>
                     <div className="relative">
@@ -541,18 +541,18 @@ export default function ContractsPage() {
                     </div>
                   </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <Button 
                     variant="outline" 
                     onClick={() => setShowCreate(false)}
-                    className="flex-1 h-14 border-white/10 rounded-xl font-bold"
+                    className="w-full sm:flex-1 h-14 border-white/10 rounded-xl font-bold"
                   >
                     Cancel
                   </Button>
                   <Button 
                     onClick={handleCreate}
                     disabled={creating || !freelancerUsername || !amount || !title}
-                    className="flex-1 h-14 bg-[#C694F9] hover:bg-[#C694F9]/90 text-black font-black rounded-xl"
+                    className="w-full sm:flex-1 h-14 bg-[#C694F9] hover:bg-[#C694F9]/90 text-black font-black rounded-xl"
                   >
                     {creating ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create & Fund Contract'}
                   </Button>
