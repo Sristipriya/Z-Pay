@@ -3,7 +3,7 @@ import { getUser } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase';
 
 // Security check: Only allow specific Admin/Arbiter emails to access this
-const ADMIN_EMAILS = ['admin@expopay.app', 'support@expopay.app']; // Customize as needed
+const ADMIN_EMAILS = ['admin@expopay.app', 'support@expopay.app', 'bkbhaia@gmail.com']; // Customize as needed
 
 export async function GET() {
   const user = await getUser();
