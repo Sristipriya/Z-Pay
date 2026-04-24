@@ -13,12 +13,19 @@ CREATE TABLE IF NOT EXISTS profiles (
   display_name        TEXT,
   full_name           TEXT,
   stellar_address     TEXT,
-  stellar_secret      TEXT,          -- encrypted at rest via Supabase Vault in prod
+  stellar_secret      TEXT,
   app_pin             TEXT,
   preferred_currency  TEXT        DEFAULT 'XLM',
   created_at          TIMESTAMPTZ DEFAULT NOW(),
   updated_at          TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Safely add columns just in case the table already existed before this script
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS stellar_address TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS stellar_secret TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS app_pin TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS preferred_currency TEXT DEFAULT 'XLM';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 -- Auto-update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at()

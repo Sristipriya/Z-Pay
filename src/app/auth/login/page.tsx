@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import { Background } from "@/components/Background";
 import { Loader2, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
@@ -14,22 +14,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const springX = useSpring(mouseX, { stiffness: 50, damping: 20 });
-  const springY = useSpring(mouseY, { stiffness: 50, damping: 20 });
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const { clientX, clientY } = e;
-      const { innerWidth, innerHeight } = window;
-      mouseX.set((clientX - innerWidth / 2) / 20);
-      mouseY.set((clientY - innerHeight / 2) / 20);
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [mouseX, mouseY]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,34 +45,7 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen bg-black text-white selection:bg-[#C694F9]/30 overflow-hidden">
-      <div className="absolute inset-0 bg-grid opacity-20" />
-      
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <motion.div
-          style={{ x: springX, y: springY }}
-          className="absolute top-[15%] left-1/2 -translate-x-1/2 w-[800px] sm:w-[1000px] aspect-square rounded-full"
-        >
-          <div
-            className="absolute inset-0 rounded-full opacity-[0.15]"
-            style={{
-              background: 'radial-gradient(circle, rgba(198, 148, 249, 0.9) 0%, rgba(148, 161, 249, 0.6) 30%, transparent 70%)',
-              filter: 'blur(80px)',
-            }}
-          />
-        </motion.div>
-        <motion.div
-          style={{ x: springX, y: springY }}
-          className="absolute bottom-[5%] right-[10%] w-[400px] sm:w-[600px] aspect-square rounded-full"
-        >
-          <div
-            className="absolute inset-0 rounded-full opacity-[0.1]"
-            style={{
-              background: 'radial-gradient(circle, rgba(245, 167, 196, 0.8) 0%, transparent 60%)',
-              filter: 'blur(100px)',
-            }}
-          />
-        </motion.div>
-      </div>
+      <Background />
 
         <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-4 sm:px-6 md:px-12 py-4 bg-transparent">
           <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group">

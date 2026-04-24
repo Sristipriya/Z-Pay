@@ -100,9 +100,6 @@ export default function AdminDashboard() {
           </h1>
           <p className="text-zinc-400 text-sm mt-1">Review and force-resolve escalated escrow disputes.</p>
         </div>
-        <div className="px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-xs font-bold flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4" /> GOD MODE ENABLED
-        </div>
       </div>
 
       <AnimatePresence>
