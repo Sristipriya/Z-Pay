@@ -21,14 +21,14 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     setError("");
 
-    // Use resetPasswordForEmail but we will instruct user to use OTP
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
 
     if (resetError) {
       setError(resetError.message);
       setLoading(false);
     } else {
-      router.push(`/auth/verify-reset-otp?email=${encodeURIComponent(email)}`);
+      setSuccess(true);
+      setLoading(false);
     }
   };
 
@@ -63,7 +63,8 @@ export default function ForgotPasswordPage() {
               className="text-[clamp(2rem,6vw,3rem)] font-black leading-[0.95] tracking-[-0.04em] mb-3 sm:mb-4 uppercase"
               style={{ fontFamily: "var(--font-syne)" }}
             >
-              Reset Password
+              <span className="block">RESET</span>
+              <span className="block text-[#C694F9]">PASSWORD</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0 }}
@@ -71,7 +72,7 @@ export default function ForgotPasswordPage() {
               transition={{ duration: 0.8, delay: 0.3 }}
               className="text-white/50 text-sm sm:text-base"
             >
-              Enter your email and we'll send you a link to reset your password.
+              Enter your email and we'll send you a 6-digit code to reset your password.
             </motion.p>
           </div>
 
@@ -86,8 +87,15 @@ export default function ForgotPasswordPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <p className="text-green-400 font-medium">Check your email for a reset link.</p>
+              <p className="text-green-400 font-medium">Check your email for the reset code.</p>
               <p className="text-sm text-zinc-400">If it doesn't appear within a few minutes, check your spam folder.</p>
+              <button
+                onClick={() => router.push(`/auth/verify-reset-otp?email=${encodeURIComponent(email)}`)}
+                className="group relative w-full h-12 sm:h-14 mt-4 bg-white text-black font-black text-sm sm:text-base rounded-xl sm:rounded-2xl overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-200 to-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span className="relative">Enter Code</span>
+              </button>
             </motion.div>
           ) : (
             <motion.form
@@ -127,7 +135,7 @@ export default function ForgotPasswordPage() {
                   {loading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    "Send Reset Link"
+                    "Send Code"
                   )}
                 </span>
               </button>
