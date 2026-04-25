@@ -77,7 +77,8 @@ export async function createEscrow(
   amount: bigint,
   tokenAddress: string,
   arbiterAddress: string,
-  escrowId: string
+  escrowId: string,
+  deadlineLedger: bigint
 ): Promise<{ txHash: string }> {
   const keypair = StellarSdk.Keypair.fromSecret(buyerSecret);
 
@@ -88,6 +89,7 @@ export async function createEscrow(
     StellarSdk.nativeToScVal(amount, { type: 'i128' }),
     new StellarSdk.Address(tokenAddress).toScVal(),
     new StellarSdk.Address(arbiterAddress).toScVal(),
+    StellarSdk.nativeToScVal(deadlineLedger, { type: 'u64' }),
   ];
 
   const tx = await buildAndPrepareTransaction(buyerAddress, 'create', args);

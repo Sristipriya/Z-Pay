@@ -1,0 +1,33 @@
+{"$message_type":"diagnostic","message":"found invalid metadata files for crate `core` which `std` depends on","code":{"code":"E0786","explanation":"A metadata file was invalid.\n\nErroneous code example:\n\n```ignore (needs extern files)\nuse ::foo; // error: found invalid metadata files for crate `foo`\n```\n\nWhen loading crates, each crate must have a valid metadata file.\nInvalid files could be caused by filesystem corruption,\nan IO error while reading the file, or (rarely) a bug in the compiler itself.\n\nConsider deleting the file and recreating it,\nor reporting a bug against the compiler.\n"},"level":"error","spans":[{"file_name":"C:\\Users\\rajdi\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\thiserror-1.0.69\\build.rs","byte_start":0,"byte_end":0,"line_start":1,"line_end":1,"column_start":1,"column_end":1,"is_primary":true,"text":[],"label":null,"suggested_replacement":null,"suggestion_applicability":null,"expansion":null}],"children":[{"message":"failed to mmap file 'C:\\Users\\rajdi\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\lib\\rustlib\\x86_64-pc-windows-msvc\\lib\\libcore-977d0517ebcaef65.rlib': The paging file is too small for this operation to complete. (os error 1455)","code":null,"level":"note","spans":[],"children":[],"rendered":null}],"rendered":"\u001b[1m\u001b[91merror[E0786]\u001b[0m\u001b[1m\u001b[97m: found invalid metadata files for crate `core` which `std` depends on\u001b[0m\n  \u001b[1m\u001b[96m|\u001b[0m\n  \u001b[1m\u001b[96m= \u001b[0m\u001b[1m\u001b[97mnote\u001b[0m: failed to mmap file 'C:\\Users\\rajdi\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\lib\\rustlib\\x86_64-pc-windows-msvc\\lib\\libcore-977d0517ebcaef65.rlib': The paging file is too small for this operation to complete. (os error 1455)\n\n"}
+{"$message_type":"diagnostic","message":"cannot resolve a prelude import","code":null,"level":"error","spans":[{"file_name":"C:\\Users\\rajdi\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\thiserror-1.0.69\\build.rs","byte_start":0,"byte_end":0,"line_start":1,"line_end":1,"column_start":1,"column_end":1,"is_primary":true,"text":[],"label":null,"suggested_replacement":null,"suggestion_applicability":null,"expansion":null}],"children":[],"rendered":"\u001b[1m\u001b[91merror\u001b[0m\u001b[1m\u001b[97m: cannot resolve a prelude import\u001b[0m\n\n"}
+
+thread 'rustc' (30608) panicked at /rustc-dev/ded5c06cf21d2b93bffd5d884aa6e96934ee4234\library\std\src\env.rs:361:9:
+failed to set environment variable `"PATH"` to `"D:\\expo\\contracts\\escrow\\target\\release\\deps;C:\\Program Files\\Common Files\\Oracle\\Java\\javapath;D:\\Scripts\\;c:\\Users\\rajdi\\AppData\\Local\\Programs\\cursor\\resources\\app\\bin;C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem;C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Windows\\System32\\OpenSSH\\;C:\\Program Files\\dotnet\\;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\MinGW\\bin;C:\\Program Files (x86)\\Microsoft SQL Server\\160\\Tools\\Binn\\;C:\\Program Files\\Microsoft SQL Server\\160\\Tools\\Binn\\;C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\170\\Tools\\Binn\\;C:\\Program Files\\Microsoft SQL Server\\160\\DTS\\Binn\\;C:\\ProgramData\\chocolatey\\bin;C:\\Program Files\\NVIDIA Corporation\\NVIDIA app\\NvDLISR;C:\\Program Files\\Git\\cmd;C:\\Users\\rajdi\\AppData\\Local\\Programs\\Python\\Launcher\\;C:\\Users\\rajdi\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\rajdi\\AppData\\Local\\GitHubDesktop\\bin;C:\\Users\\rajdi\\AppData\\Roaming\\npm;C:\\Users\\rajdi\\AppData\\Local\\Programs\\Windsurf\\bin;C:\\Users\\rajdi\\AppData\\Local\\Programs\\mongosh\\;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\Warp\\bin;;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files\\Amazon\\AWSCLIV2\\;C:\\Users\\rajdi\\.cargo\\bin;C:\\Users\\rajdi\\AppData\\Local\\Programs\\Python\\Python310\\Scripts\\;C:\\Users\\rajdi\\AppData\\Local\\Programs\\Python\\Python310\\;C:\\Users\\rajdi\\AppData\\Local\\Programs\\Python\\Launcher\\;C:\\Users\\rajdi\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\rajdi\\AppData\\Local\\Programs\\Microsoft VS Code\\bin;C:\\Users\\rajdi\\AppData\\Local\\GitHubDesktop\\bin;C:\\Program Files\\MongoDB\\Server\\8.0\\bin;C:\\Users\\rajdi\\.bun\\bin;C:\\Users\\rajdi\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\rajdi\\AppData\\Local\\Programs\\Antigravity\\bin;D:\\Kiro\\bin;C:\\Users\\rajdi\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin"`: Insufficient system resources exist to complete the requested service. (os error 1450)
+stack backtrace:
+   0:     0x7ffbe5388062 - <unknown>
+   1:     0x7ffbe539d76a - <unknown>
+   2:     0x7ffbe534f507 - <unknown>
+   3:     0x7ffbe5367d05 - <unknown>
+   4:     0x7ffbe536f6b9 - <unknown>
+   5:     0x7ffbe536f4a8 - <unknown>
+   6:     0x7ffbe6b6cf74 - <unknown>
+   7:     0x7ffbe536ff7a - <unknown>
+   8:     0x7ffbe536fd09 - <unknown>
+   9:     0x7ffbe5367f0f - <unknown>
+  10:     0x7ffbe5349a1e - <unknown>
+  11:     0x7ffbe952d831 - <unknown>
+  12:     0x7ffbe53cca02 - <unknown>
+  13:     0x7ffbe296b350 - <unknown>
+  14:     0x7ffbe4dc6023 - <unknown>
+  15:     0x7ffbe4f10d0d - <unknown>
+  16:     0x7ffbe4dd3315 - <unknown>
+  17:     0x7ffbe4ea6a88 - <unknown>
+  18:     0x7ffbe5195a15 - <unknown>
+  19:     0x7ffbe28f9b83 - <unknown>
+  20:     0x7ffbe28f208f - <unknown>
+  21:     0x7ffbe29008ed - <unknown>
+  22:     0x7ffbe53601fd - <unknown>
+  23:     0x7ffd0742e957 - <unknown>
+  24:     0x7ffd0890427c - <unknown>
+
+memory allocation of 53351 bytes failed

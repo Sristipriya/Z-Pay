@@ -50,6 +50,7 @@ export async function POST(request: Request) {
   try {
     const expiryDays = expiry_days || 30;
     const amountInStroops = BigInt(Math.floor(parseFloat(amount) * 10000000));
+    const deadlineLedger = calculateDeadlineLedger(expiryDays);
     
     // Generate a unique string ID for the escrow contract
     const escrowId = Date.now().toString();
@@ -70,7 +71,8 @@ export async function POST(request: Request) {
       amountInStroops,
       'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC', // EXPO Token
       arbiterAddress,
-      escrowId
+      escrowId,
+      deadlineLedger
     );
 
     const { data: contract, error } = await supabaseAdmin
