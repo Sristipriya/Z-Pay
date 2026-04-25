@@ -45,6 +45,20 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
   }
 
+  // If changing phone number, ensure it's not already taken by another user
+  if (updateData.phone_number) {
+    const { data: existingPhone } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('phone_number', updateData.phone_number)
+      .neq('id', user.id)
+      .maybeSingle();
+
+    if (existingPhone) {
+      return NextResponse.json({ error: 'Phone number already registered to another account' }, { status: 400 });
+    }
+  }
+
   const { data, error } = await supabaseAdmin
     .from('profiles')
     .update(updateData)
