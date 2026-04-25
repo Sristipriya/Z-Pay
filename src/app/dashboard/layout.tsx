@@ -100,8 +100,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
       </aside>
 
+      {/* Mobile Top Header */}
+      <header className="lg:hidden sticky top-0 z-40 bg-black/40 backdrop-blur-2xl border-b border-white/5 px-4 h-16 flex items-center justify-between">
+        <Link href="/dashboard">
+          <Logo size="small" />
+        </Link>
+        <Link 
+          href="/dashboard/settings" 
+          className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 hover:bg-white/10 transition-colors"
+        >
+          <Settings className="w-5 h-5 text-white/70" />
+        </Link>
+      </header>
+
       <main className="lg:pl-72 xl:pl-80 pb-28 lg:pb-0">
-        <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-5xl">
+        <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-12 max-w-5xl">
           <motion.div
             key={mounted ? pathname : 'initial'}
             initial={{ opacity: 0, y: 10 }}
