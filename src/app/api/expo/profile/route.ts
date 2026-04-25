@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { getUser } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase';
 
+// Allow up to 2MB body (for base64 avatar_url payloads)
+export const runtime = 'nodejs';
+
 export async function GET() {
   const user = await getUser();
   if (!user) {

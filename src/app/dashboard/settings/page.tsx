@@ -388,31 +388,40 @@ export default function SettingsPage() {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
-                  if (file.size > 2 * 1024 * 1024) { toast.error("Image must be under 2MB"); return; }
-                  const reader = new FileReader();
-                  reader.onload = async (event) => {
-                    const dataUrl = event.target?.result as string;
-                    toast.loading('Uploading photo...');
+
+                  // Compress via canvas before saving (keeps payload < 100KB)
+                  const img = new Image();
+                  const objectUrl = URL.createObjectURL(file);
+                  img.onload = async () => {
+                    URL.revokeObjectURL(objectUrl);
+                    const MAX = 300; // px
+                    const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+                    const canvas = document.createElement("canvas");
+                    canvas.width = img.width * ratio;
+                    canvas.height = img.height * ratio;
+                    canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+
+                    toast.loading("Uploading photo...");
                     try {
                       const res = await fetch("/api/expo/profile", {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ avatar_url: dataUrl }),
                       });
+                      toast.dismiss();
                       if (res.ok) {
                         setProfile((p: any) => p ? { ...p, avatar_url: dataUrl } : p);
-                        toast.dismiss();
-                        toast.success('Profile photo updated!');
+                        toast.success("Profile photo updated!");
                       } else {
-                        toast.dismiss();
-                        toast.error('Failed to upload photo');
+                        toast.error("Failed to save photo");
                       }
                     } catch {
                       toast.dismiss();
-                      toast.error('Failed to upload photo');
+                      toast.error("Failed to upload photo");
                     }
                   };
-                  reader.readAsDataURL(file);
+                  img.src = objectUrl;
                 }}
               />
             </label>

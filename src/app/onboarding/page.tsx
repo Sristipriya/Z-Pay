@@ -301,10 +301,19 @@ export default function OnboardingPage() {
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
-                          if (file.size > 2 * 1024 * 1024) { alert("Image must be under 2MB"); return; }
-                          const reader = new FileReader();
-                          reader.onload = (ev) => setAvatarUrl(ev.target?.result as string);
-                          reader.readAsDataURL(file);
+                          const img = new Image();
+                          const objectUrl = URL.createObjectURL(file);
+                          img.onload = () => {
+                            URL.revokeObjectURL(objectUrl);
+                            const MAX = 300;
+                            const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+                            const canvas = document.createElement("canvas");
+                            canvas.width = img.width * ratio;
+                            canvas.height = img.height * ratio;
+                            canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            setAvatarUrl(canvas.toDataURL("image/jpeg", 0.75));
+                          };
+                          img.src = objectUrl;
                         }}
                       />
                     </label>
