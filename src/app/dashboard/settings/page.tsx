@@ -106,18 +106,19 @@ function Toggle({
   return (
     <button
       onClick={() => onChange(!checked)}
-      className={`relative w-11 h-6 rounded-full transition-colors duration-300 ${
-        checked ? "bg-[#C694F9]" : "bg-white/10"
+      className={`relative w-12 h-6 rounded-lg transition-colors duration-300 border ${
+        checked ? "bg-[#C694F9]/20 border-[#C694F9]/50" : "bg-white/5 border-white/10"
       }`}
     >
       <motion.div
-        className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow"
-        animate={{ x: checked ? 20 : 0 }}
+        className={`absolute top-1 left-1 w-3.5 h-3.5 rounded-[4px] shadow transition-colors ${
+          checked ? "bg-[#C694F9]" : "bg-white/40"
+        }`}
+        animate={{ x: checked ? 24 : 0 }}
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
       />
     </button>
   );
-}
 
 /* ─── Row inside a section ───────────────────────────────────────── */
 function Row({
