@@ -4,7 +4,7 @@ const { Server } = StellarSdk.rpc;
 
 const SOROBAN_RPC_URL = process.env.SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org';
 const NETWORK_PASSPHRASE = process.env.STELLAR_NETWORK_PASSPHRASE || StellarSdk.Networks.TESTNET;
-const CONTRACT_ID = process.env.ESCROW_CONTRACT_ID || '';
+const CONTRACT_ID = process.env.ESCROW_CONTRACT_ID || 'CAGMD6PBDSOSB2NDOE5ZGYCWH74EOBJFHM627WTGLZZF66DBRUFWYSPT';
 const TOKEN_CONTRACT_ID = process.env.TOKEN_CONTRACT_ID || 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
 
 const server = new Server(SOROBAN_RPC_URL);
@@ -16,6 +16,7 @@ export interface EscrowData {
   seller: string;
   token: string;
   amount: bigint;
+  deadline: bigint;
   status: EscrowStatus;
 }
 
@@ -26,7 +27,7 @@ async function buildAndPrepareTransaction(
 ): Promise<StellarSdk.Transaction> {
   const contract = new StellarSdk.Contract(CONTRACT_ID);
   const account = await server.getAccount(sourcePublicKey);
-
+  
   const tx = new StellarSdk.TransactionBuilder(account, {
     fee: '100000',
     networkPassphrase: NETWORK_PASSPHRASE,
@@ -44,9 +45,9 @@ async function signAndSubmitTransaction(
   keypair: StellarSdk.Keypair
 ): Promise<{ hash: string; result?: StellarSdk.xdr.ScVal }> {
   transaction.sign(keypair);
-
+  
   const sendRes = await server.sendTransaction(transaction);
-
+  
   if (sendRes.status === 'ERROR') {
     throw new Error(`Transaction failed: ${sendRes.errorResult?.toXDR('base64') || 'Unknown error'}`);
   }
@@ -69,145 +70,141 @@ async function signAndSubmitTransaction(
   return { hash: sendRes.hash, result: resultVal };
 }
 
-// Contract ABI: create(escrow_id, client, freelancer, amount, token_id, arbiter)
 export async function createEscrow(
   buyerSecret: string,
   buyerAddress: string,
   sellerAddress: string,
   amount: bigint,
-  tokenAddress: string,
-  arbiterAddress: string,
-  escrowId: string
-): Promise<{ txHash: string }> {
+  deadlineLedger: bigint
+): Promise<{ txHash: string; escrowId: number }> {
   const keypair = StellarSdk.Keypair.fromSecret(buyerSecret);
 
   const args = [
-    StellarSdk.nativeToScVal(escrowId, { type: 'string' }),
     new StellarSdk.Address(buyerAddress).toScVal(),
     new StellarSdk.Address(sellerAddress).toScVal(),
+    new StellarSdk.Address(TOKEN_CONTRACT_ID).toScVal(),
     StellarSdk.nativeToScVal(amount, { type: 'i128' }),
-    new StellarSdk.Address(tokenAddress).toScVal(),
-    new StellarSdk.Address(arbiterAddress).toScVal(),
+    StellarSdk.nativeToScVal(deadlineLedger, { type: 'u64' }),
   ];
 
   const tx = await buildAndPrepareTransaction(buyerAddress, 'create', args);
-  const { hash } = await signAndSubmitTransaction(tx, keypair);
+  const { hash, result } = await signAndSubmitTransaction(tx, keypair);
+  
+  let escrowId = 0;
+  if (result) {
+    escrowId = Number(StellarSdk.scValToNative(result));
+  }
 
-  return { txHash: hash };
+  return { txHash: hash, escrowId };
 }
 
-export async function fundEscrow(escrowId: string, buyerSecret: string): Promise<string> {
-  const keypair = StellarSdk.Keypair.fromSecret(buyerSecret);
-  const buyerAddress = keypair.publicKey();
-
-  const args = [
-    StellarSdk.nativeToScVal(escrowId, { type: 'string' }),
-  ];
-
-  const tx = await buildAndPrepareTransaction(buyerAddress, 'fund', args);
-  const { hash } = await signAndSubmitTransaction(tx, keypair);
-  return hash;
-}
-
-export async function deliverEscrow(escrowId: string, sellerSecret: string): Promise<string> {
+export async function deliverEscrow(escrowId: number, sellerSecret: string): Promise<string> {
   const keypair = StellarSdk.Keypair.fromSecret(sellerSecret);
   const sellerAddress = keypair.publicKey();
-
+  
   const args = [
-    StellarSdk.nativeToScVal(escrowId, { type: 'string' }),
+    StellarSdk.nativeToScVal(escrowId, { type: 'u64' }),
   ];
-
+  
   const tx = await buildAndPrepareTransaction(sellerAddress, 'deliver', args);
   const { hash } = await signAndSubmitTransaction(tx, keypair);
   return hash;
 }
 
-export async function releaseEscrow(escrowId: string, buyerSecret: string): Promise<string> {
+export async function releaseEscrow(escrowId: number, buyerSecret: string): Promise<string> {
   const keypair = StellarSdk.Keypair.fromSecret(buyerSecret);
   const buyerAddress = keypair.publicKey();
-
+  
   const args = [
-    StellarSdk.nativeToScVal(escrowId, { type: 'string' }),
+    StellarSdk.nativeToScVal(escrowId, { type: 'u64' }),
   ];
-
-  const tx = await buildAndPrepareTransaction(buyerAddress, 'release_funds', args);
+  
+  const tx = await buildAndPrepareTransaction(buyerAddress, 'release', args);
   const { hash } = await signAndSubmitTransaction(tx, keypair);
   return hash;
 }
 
-export async function disputeEscrow(escrowId: string, callerSecret: string): Promise<string> {
+export async function disputeEscrow(escrowId: number, callerSecret: string): Promise<string> {
   const keypair = StellarSdk.Keypair.fromSecret(callerSecret);
   const callerAddress = keypair.publicKey();
-
+  
   const args = [
-    StellarSdk.nativeToScVal(escrowId, { type: 'string' }),
-    new StellarSdk.Address(callerAddress).toScVal(),
+    StellarSdk.nativeToScVal(escrowId, { type: 'u64' }),
   ];
-
+  
   const tx = await buildAndPrepareTransaction(callerAddress, 'dispute', args);
   const { hash } = await signAndSubmitTransaction(tx, keypair);
   return hash;
 }
 
-export async function refundEscrow(escrowId: string, buyerSecret: string): Promise<string> {
+export async function refundEscrow(escrowId: number, buyerSecret: string): Promise<string> {
   const keypair = StellarSdk.Keypair.fromSecret(buyerSecret);
   const buyerAddress = keypair.publicKey();
-
+  
   const args = [
-    StellarSdk.nativeToScVal(escrowId, { type: 'string' }),
+    StellarSdk.nativeToScVal(escrowId, { type: 'u64' }),
   ];
-
-  const tx = await buildAndPrepareTransaction(buyerAddress, 'cancel_escrow', args);
+  
+  const tx = await buildAndPrepareTransaction(buyerAddress, 'refund', args);
   const { hash } = await signAndSubmitTransaction(tx, keypair);
   return hash;
 }
 
-export async function resolveEscrow(escrowId: string, arbiterSecret: string, payFreelancer: boolean): Promise<string> {
+export async function resolveEscrow(escrowId: number, arbiterSecret: string, payFreelancer: boolean): Promise<string> {
   const keypair = StellarSdk.Keypair.fromSecret(arbiterSecret);
   const arbiterAddress = keypair.publicKey();
-
+  
   const args = [
-    StellarSdk.nativeToScVal(escrowId, { type: 'string' }),
+    StellarSdk.nativeToScVal(escrowId, { type: 'u64' }),
     StellarSdk.nativeToScVal(payFreelancer, { type: 'bool' }),
   ];
-
+  
   const tx = await buildAndPrepareTransaction(arbiterAddress, 'resolve', args);
   const { hash } = await signAndSubmitTransaction(tx, keypair);
   return hash;
 }
 
-export async function getEscrow(escrowId: string): Promise<EscrowData | null> {
+export async function getEscrow(escrowId: number): Promise<EscrowData | null> {
   try {
     const contract = new StellarSdk.Contract(CONTRACT_ID);
-    const sourceAccount = await server.getAccount('GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF');
-
+    const randomAccount = StellarSdk.Keypair.random().publicKey();
+    
+    const account = await server.getAccount(randomAccount).catch(() => null);
+    if (!account) {
+      const fundedAccount = await server.getAccount('GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF').catch(() => null);
+      if (!fundedAccount) return null;
+    }
+    
+    const sourceAccount = account || await server.getAccount('GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF');
+    
     const tx = new StellarSdk.TransactionBuilder(sourceAccount, {
       fee: '100',
       networkPassphrase: NETWORK_PASSPHRASE,
     })
       .setTimeout(30)
-      .addOperation(contract.call('get_escrow', StellarSdk.nativeToScVal(escrowId, { type: 'string' })))
+      .addOperation(contract.call('get', StellarSdk.nativeToScVal(escrowId, { type: 'u64' })))
       .build();
 
     const simRes = await server.simulateTransaction(tx);
-
+    
     if ('result' in simRes && simRes.result) {
       const raw = StellarSdk.scValToNative(simRes.result.retval);
-
+      
       const statusMap: Record<string, EscrowStatus> = {
-        'Funded':   'Funded',
-        'Delivered':'Delivered',
+        'Funded': 'Funded',
+        'Delivered': 'Delivered', 
         'Released': 'Released',
         'Disputed': 'Disputed',
         'Refunded': 'Refunded',
       };
-
+      
       return {
-        buyer:  raw.client,
-        seller: raw.freelancer,
-        token:  raw.token,
+        buyer: raw.buyer,
+        seller: raw.seller,
+        token: raw.token,
         amount: BigInt(raw.amount),
-        status: statusMap[Object.keys(raw.status ?? {})[0]] ?? 'Funded',
+        deadline: BigInt(raw.deadline),
+        status: statusMap[Object.keys(raw.status)[0]] || 'Funded',
       };
     }
     return null;

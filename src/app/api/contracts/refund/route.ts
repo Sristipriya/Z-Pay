@@ -116,7 +116,7 @@ An arbiter will review the evidence and decide. Contact support@expopay.app with
   try {
     if (isPayer) {
       // Payer: legitimate refund (they disputed before delivery, or contract expired)
-      const txHash = await refundEscrow(contract.escrow_id.toString(), callerProfile.stellar_secret);
+      const txHash = await refundEscrow(Number(contract.escrow_id), callerProfile.stellar_secret);
 
       const { error: refundError } = await supabaseAdmin
         .from('contracts')
@@ -147,7 +147,7 @@ An arbiter will review the evidence and decide. Contact support@expopay.app with
       }
 
       const isAutoRelease = isAutoReleaseEligible && !isDisputed;
-      const txHash        = await releaseEscrow(contract.escrow_id.toString(), payerProfile.stellar_secret);
+      const txHash        = await releaseEscrow(Number(contract.escrow_id), payerProfile.stellar_secret);
 
       await supabaseAdmin
         .from('contracts')

@@ -45,7 +45,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const txHash = await deliverEscrow(contract.escrow_id.toString(), freelancerProfile.stellar_secret);
+    const txHash = await deliverEscrow(Number(contract.escrow_id), freelancerProfile.stellar_secret);
 
     await supabaseAdmin
       .from('contracts')
