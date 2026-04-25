@@ -32,6 +32,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
+  const isUpdatePasswordPage = request.nextUrl.pathname === '/auth/update-password';
   const isDashboardPage = request.nextUrl.pathname.startsWith('/dashboard');
   const isOnboardingPage = request.nextUrl.pathname.startsWith('/onboarding');
   const isApiRoute = request.nextUrl.pathname.startsWith('/api');
@@ -41,15 +42,15 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Redirect logged-in users away from auth pages
-  if (user && isAuthPage) {
+  // Redirect logged-in users away from auth pages (except update-password)
+  if (user && isAuthPage && !isUpdatePasswordPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);
   }
 
   // Redirect non-logged-in users away from protected pages
-  if (!user && (isDashboardPage || isOnboardingPage)) {
+  if (!user && (isDashboardPage || isOnboardingPage || isUpdatePasswordPage)) {
     const url = request.nextUrl.clone();
     url.pathname = '/auth/login';
     return NextResponse.redirect(url);

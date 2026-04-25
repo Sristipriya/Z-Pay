@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { ShieldAlert, LogOut, RefreshCw } from "lucide-react";
 
-const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 const WARNING_BEFORE_MS = 60 * 1000;           // warn 1 min before
 
 const ACTIVITY_EVENTS = [
@@ -35,6 +35,7 @@ export function InactivityGuard({ children }: { children: React.ReactNode }) {
 
   const doLogout = useCallback(async () => {
     clearAll();
+    localStorage.removeItem("expopay_last_activity");
     await supabase.auth.signOut();
     router.push("/auth/login?reason=inactivity");
   }, [clearAll, router]);
@@ -64,10 +65,24 @@ export function InactivityGuard({ children }: { children: React.ReactNode }) {
   }, [clearAll, doLogout]);
 
   useEffect(() => {
+    const lastActivity = localStorage.getItem("expopay_last_activity");
+    if (lastActivity && Date.now() - parseInt(lastActivity) > INACTIVITY_TIMEOUT_MS) {
+      doLogout();
+      return;
+    }
+
+    const updateLastActivity = () => {
+      localStorage.setItem("expopay_last_activity", Date.now().toString());
+    };
+
     resetTimers();
+    updateLastActivity();
+
     const handleActivity = () => {
+      updateLastActivity();
       if (!showWarning) resetTimers();
     };
+
     ACTIVITY_EVENTS.forEach((ev) =>
       window.addEventListener(ev, handleActivity, { passive: true })
     );
