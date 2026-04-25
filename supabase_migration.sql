@@ -183,7 +183,33 @@ CREATE POLICY "Authenticated users can create contracts"
 -- ────────────────────────────────────────────────────────────
 
 -- ────────────────────────────────────────────────────────────
--- 5. GRANT USAGE (standard Supabase setup)
+-- 5. FX QUOTES
+-- ────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS fx_quotes (
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID        REFERENCES profiles(id) ON DELETE CASCADE,
+  from_currency   TEXT        NOT NULL,
+  to_currency     TEXT        NOT NULL,
+  rate            NUMERIC(20, 8) NOT NULL,
+  source_amount   NUMERIC(20, 7) NOT NULL,
+  target_amount   NUMERIC(20, 7) NOT NULL,
+  expires_at      TIMESTAMPTZ NOT NULL,
+  used            BOOLEAN     DEFAULT FALSE,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS fx_quotes_user_idx ON fx_quotes(user_id);
+CREATE INDEX IF NOT EXISTS fx_quotes_expires_idx ON fx_quotes(expires_at DESC);
+
+ALTER TABLE fx_quotes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own quotes" ON fx_quotes;
+CREATE POLICY "Users can view own quotes"
+  ON fx_quotes FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- ────────────────────────────────────────────────────────────
+-- 6. GRANT USAGE (standard Supabase setup)
 -- ────────────────────────────────────────────────────────────
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;

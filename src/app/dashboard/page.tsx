@@ -29,54 +29,75 @@ export default function DashboardPage() {
         fetch("/api/merchant/history"),
       ]);
 
-      const [profileData, balanceData, historyData, merchantData] = await Promise.all([
-        profileRes.json(),
-        balanceRes.json(),
-        historyRes.json(),
-        merchantRes.json(),
+      // Only update profile if response is OK and has universal_id
+      if (profileRes.ok) {
+        const profileData = await profileRes.json();
+        if (profileData?.universal_id) {
+          setProfile(profileData);
+        }
+      }
+
+      // Only update balance if response is OK and has xlm_balance
+      let profileDataForContacts: any = null;
+      if (balanceRes.ok) {
+        const balanceData = await balanceRes.json();
+        if (balanceData?.xlm_balance !== undefined) {
+          setBalances(balanceData.balances || []);
+          setConvertedBalance(balanceData.converted_balance || "0.00");
+          setXlmBalance(balanceData.xlm_balance || "0.00");
+        }
+      }
+
+      const [historyData, merchantData] = await Promise.all([
+        historyRes.ok ? historyRes.json() : [],
+        merchantRes.ok ? merchantRes.json() : [],
       ]);
 
-      const p2pTx = Array.isArray(historyData) 
+      const p2pTx = Array.isArray(historyData)
         ? historyData.map((tx: any) => ({ ...tx, type: 'p2p' }))
         : [];
-      const merchantTx = Array.isArray(merchantData) 
-        ? merchantData.map((tx: any) => ({ 
-            ...tx, 
+      const merchantTx = Array.isArray(merchantData)
+        ? merchantData.map((tx: any) => ({
+            ...tx,
             type: 'merchant',
-            amount: tx.xlm_amount 
+            amount: tx.xlm_amount
           }))
         : [];
-      
+
       const allTx = [...p2pTx, ...merchantTx]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 5);
 
-      setProfile(profileData);
-      setBalances(balanceData.balances || []);
-      setConvertedBalance(balanceData.converted_balance || "0.00");
-      setXlmBalance(balanceData.xlm_balance || "0.00");
-      setTransactions(allTx);
+      if (allTx.length > 0) {
+        setTransactions(allTx);
+      }
 
       // Build recent contacts from sent P2P transactions (unique recipients)
-      const seen = new Set<string>();
-      const contacts: any[] = [];
-      for (const tx of p2pTx) {
-        const uid = tx.sender_id === profileData?.id
-          ? tx.recipient_universal_id
-          : null; // only outgoing
-        if (uid && !seen.has(uid)) {
-          seen.add(uid);
-          contacts.push({
-            username: uid,
-            display_name: uid,
-            last_paid_at: tx.created_at,
-            currency: tx.currency || 'XLM',
-          });
+      setProfile((currentProfile: any) => {
+        if (!currentProfile?.id) return currentProfile;
+        const seen = new Set<string>();
+        const contacts: any[] = [];
+        for (const tx of p2pTx) {
+          const uid = tx.sender_id === currentProfile.id
+            ? tx.recipient_universal_id
+            : null;
+          if (uid && !seen.has(uid)) {
+            seen.add(uid);
+            contacts.push({
+              username: uid,
+              display_name: uid,
+              last_paid_at: tx.created_at,
+              currency: tx.currency || 'XLM',
+            });
+          }
         }
-      }
-      setRecentContacts(contacts.slice(0, 8));
+        setRecentContacts(contacts.slice(0, 8));
+        return currentProfile;
+      });
+
     } catch (err) {
       console.error("Fetch error:", err);
+      // Do NOT reset state on error — keep showing last good values
     } finally {
       setLoading(false);
     }
