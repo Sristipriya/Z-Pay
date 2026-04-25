@@ -243,7 +243,7 @@ export default function SettingsPage() {
         animate={{ opacity: 1, y: 0 }}
       >
         <h1
-          className="text-4xl md:text-5xl font-black tracking-tight uppercase"
+          className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight uppercase"
           style={{ fontFamily: "var(--font-syne)" }}
         >
           Settings

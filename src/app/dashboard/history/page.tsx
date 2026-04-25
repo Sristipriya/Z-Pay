@@ -131,7 +131,7 @@ export default function HistoryPage() {
     <div className="space-y-12 pb-20">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
         <div>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-4 uppercase leading-none">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-4 uppercase leading-none">
             HISTORY
           </h1>
           <p className="text-zinc-500 font-medium text-lg">Immutable proof of global transactions</p>

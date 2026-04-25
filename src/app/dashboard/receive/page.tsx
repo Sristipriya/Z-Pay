@@ -70,7 +70,7 @@ export default function ReceivePage() {
           <Globe className="w-3.5 h-3.5 text-[#C694F9]" />
           <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Global Payment Gateway</span>
         </div>
-        <h1 className="text-5xl md:text-6xl font-black tracking-tight uppercase leading-none" style={{ fontFamily: 'var(--font-syne)' }}>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight uppercase leading-none" style={{ fontFamily: 'var(--font-syne)' }}>
           RECEIVE
         </h1>
         <p className="text-white/40 font-medium text-lg">Accept payments from any app, any currency, anywhere.</p>

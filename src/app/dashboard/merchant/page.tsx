@@ -378,7 +378,7 @@ export default function MerchantPayPage() {
   return (
     <div className="max-w-xl mx-auto space-y-6 pb-20">
       <div className="text-center">
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-3 uppercase leading-none">PAY MERCHANT</h1>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-3 uppercase leading-none">PAY MERCHANT</h1>
         <p className="text-zinc-500 font-medium">Pay Indian merchants with your crypto - they receive INR</p>
       </div>
 

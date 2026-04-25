@@ -121,7 +121,7 @@ export default function ScanPage() {
   return (
     <div className="max-w-xl mx-auto space-y-12 pb-20">
       <div className="text-center">
-        <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-4 uppercase leading-none">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-4 uppercase leading-none">
           SCAN & PAY
         </h1>
         <p className="text-zinc-500 font-medium text-lg">Instant settlement via visual routing</p>
