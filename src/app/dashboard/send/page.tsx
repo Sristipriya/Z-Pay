@@ -17,6 +17,7 @@ interface ReceiverProfile {
   address: string;
   display_name: string;
   full_name?: string;
+  avatar_url?: string | null;
   preferred_currency: string;
   verified: boolean;
 }
@@ -108,8 +109,11 @@ function PinModal({ isOpen, onClose, onSubmit, loading, receiver, quote, pinErro
         {receiver && quote && (
           <div className="p-4 bg-white/5 rounded-2xl space-y-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#C694F9]/20 rounded-xl flex items-center justify-center font-black text-[#C694F9]">
-                {receiver.display_name?.[0] || receiver.username[0]}
+              <div
+                className="w-10 h-10 bg-[#C694F9]/20 rounded-xl flex items-center justify-center font-black text-[#C694F9] bg-cover bg-center overflow-hidden"
+                style={{ backgroundImage: receiver.avatar_url ? `url(${receiver.avatar_url})` : undefined }}
+              >
+                {!receiver.avatar_url && (receiver.display_name?.[0] || receiver.username[0])}
               </div>
               <div>
                 <p className="font-bold flex items-center gap-2">
@@ -453,8 +457,11 @@ function SendForm() {
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                 <div className="p-5 bg-[#C694F9]/10 rounded-2xl border border-[#C694F9]/20 space-y-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-[#C694F9]/20 rounded-2xl flex items-center justify-center text-2xl font-black text-[#C694F9]">
-                      {receiverProfile.display_name?.[0] || receiverProfile.username[0]}
+                    <div
+                      className="w-14 h-14 bg-[#C694F9]/20 rounded-2xl flex items-center justify-center text-2xl font-black text-[#C694F9] bg-cover bg-center overflow-hidden"
+                      style={{ backgroundImage: receiverProfile.avatar_url ? `url(${receiverProfile.avatar_url})` : undefined }}
+                    >
+                      {!receiverProfile.avatar_url && (receiverProfile.display_name?.[0] || receiverProfile.username[0])}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">

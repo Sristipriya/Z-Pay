@@ -475,8 +475,11 @@ export default function ContractsPage() {
                   </div>
                   {receiverProfile && (
                     <div className="flex items-center gap-3 p-3 bg-[#C694F9]/10 rounded-xl border border-[#C694F9]/20">
-                      <div className="w-10 h-10 bg-[#C694F9]/20 rounded-lg flex items-center justify-center font-black text-[#C694F9]">
-                        {receiverProfile.display_name?.[0] || receiverProfile.username?.[0]}
+                      <div
+                        className="w-10 h-10 bg-[#C694F9]/20 rounded-lg flex items-center justify-center font-black text-[#C694F9] bg-cover bg-center overflow-hidden"
+                        style={{ backgroundImage: receiverProfile.avatar_url ? `url(${receiverProfile.avatar_url})` : undefined }}
+                      >
+                        {!receiverProfile.avatar_url && (receiverProfile.display_name?.[0] || receiverProfile.username?.[0])}
                       </div>
                       <div>
                         <p className="font-bold flex items-center gap-2">
