@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getUser } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { createStellarAccount, registerUniversalId } from '@/lib/stellar';
+import { notifyWelcome } from '@/lib/notify';
 
 export async function POST(request: Request) {
   const user = await getUser();
@@ -60,6 +61,9 @@ export async function POST(request: Request) {
     if (updateError) {
       throw updateError;
     }
+
+    // Fire welcome email (fire-and-forget, works for both manual and Google signup)
+    notifyWelcome(user.id, username, full_name).catch(console.error);
 
     return NextResponse.json({
       success: true,

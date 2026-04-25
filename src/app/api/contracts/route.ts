@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getUser } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { createEscrow, calculateDeadlineLedger, getCurrentLedger } from '@/lib/escrow';
+import { notifyEscrow } from '@/lib/notify';
 
 export async function POST(request: Request) {
   const user = await getUser();
@@ -97,6 +98,19 @@ export async function POST(request: Request) {
       console.error('Contract creation error:', error);
       return NextResponse.json({ error: 'Failed to save contract' }, { status: 500 });
     }
+
+    notifyEscrow({
+      event: 'funded',
+      contractTitle: title,
+      amount: parseFloat(amount),
+      currency: 'XLM',
+      payerId: payerProfile.id,
+      freelancerId: freelancerProfile.id,
+      payerUniversalId: payerProfile.universal_id,
+      freelancerUniversalId: freelancerProfile.universal_id,
+      txHash,
+      notifyParties: 'freelancer',
+    }).catch(console.error);
 
     return NextResponse.json({ 
       success: true, 

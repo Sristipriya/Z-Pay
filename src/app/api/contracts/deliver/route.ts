@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getUser } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { deliverEscrow } from '@/lib/escrow';
+import { notifyEscrow } from '@/lib/notify';
 
 export async function POST(request: Request) {
   const user = await getUser();
@@ -57,6 +58,19 @@ export async function POST(request: Request) {
           : `--- DELIVERY NOTE ---\n${delivery_note || 'Work delivered'}`,
       })
       .eq('id', contract_id);
+
+    notifyEscrow({
+      event: 'delivered',
+      contractTitle: contract.title,
+      amount: contract.amount,
+      currency: contract.currency,
+      payerId: contract.payer_id,
+      freelancerId: contract.freelancer_id,
+      payerUniversalId: contract.payer_universal_id,
+      freelancerUniversalId: contract.freelancer_universal_id,
+      txHash,
+      notifyParties: 'payer',
+    }).catch(console.error);
 
     return NextResponse.json({
       success: true,

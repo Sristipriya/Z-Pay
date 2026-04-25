@@ -3,6 +3,7 @@ import { getUser } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { sendPayment } from '@/lib/stellar';
 import { getExchangeRate } from '@/lib/fx-service';
+import { notifyPayment } from '@/lib/notify';
 
 export async function POST(request: Request) {
   const user = await getUser();
@@ -109,6 +110,20 @@ export async function POST(request: Request) {
       });
 
     if (txError) console.error('History recording error:', txError);
+
+    // Fire-and-forget email notifications to both parties
+    if (recipientProfile?.id) {
+      notifyPayment({
+        senderId: senderProfile.id,
+        recipientId: recipientProfile.id,
+        senderUniversalId: senderProfile.universal_id || '',
+        recipientUniversalId: recipientProfile.universal_id || '',
+        amount: parseFloat(amount),
+        currency: sourceCurrency,
+        txHash,
+        note: note || purpose || undefined,
+      }).catch(console.error);
+    }
 
     return NextResponse.json({ 
       success: true, 

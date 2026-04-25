@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getUser } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { resolveEscrow } from '@/lib/escrow';
+import { notifyEscrow } from '@/lib/notify';
 
 const ADMIN_EMAILS = ['admin@expopay.app', 'support@expopay.app', 'bkbhaia@gmail.com'];
 
@@ -100,6 +101,19 @@ export async function POST(request: Request) {
           purpose:                'Dispute Refund',
         });
     }
+
+    notifyEscrow({
+      event: payFreelancer ? 'resolved_freelancer' : 'resolved_client',
+      contractTitle: contract.title,
+      amount: contract.amount,
+      currency: contract.currency,
+      payerId: contract.payer_id,
+      freelancerId: contract.freelancer_id,
+      payerUniversalId: contract.payer_universal_id,
+      freelancerUniversalId: contract.freelancer_universal_id,
+      txHash,
+      notifyParties: 'both',
+    }).catch(console.error);
 
     return NextResponse.json({
       success: true,

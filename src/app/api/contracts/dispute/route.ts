@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getUser } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { disputeEscrow } from '@/lib/escrow';
+import { notifyEscrow } from '@/lib/notify';
 
 export async function POST(request: Request) {
   const user = await getUser();
@@ -96,6 +97,19 @@ export async function POST(request: Request) {
         ? 'Dispute raised. Funds are frozen. Since work was delivered, an arbiter will review your case — you cannot self-refund.'
         : 'Dispute raised. Funds are frozen. You may request a refund.'
       : 'Dispute raised. Funds are frozen. You can now claim your payment.';
+
+    notifyEscrow({
+      event: 'disputed',
+      contractTitle: contract.title,
+      amount: contract.amount,
+      currency: contract.currency,
+      payerId: contract.payer_id,
+      freelancerId: contract.freelancer_id,
+      payerUniversalId: contract.payer_universal_id,
+      freelancerUniversalId: contract.freelancer_universal_id,
+      txHash,
+      notifyParties: 'both',
+    }).catch(console.error);
 
     return NextResponse.json({ success: true, tx_hash: txHash, message: msg });
   } catch (error: any) {
