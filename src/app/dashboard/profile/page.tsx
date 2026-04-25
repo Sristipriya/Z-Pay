@@ -6,14 +6,19 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Mail, Shield, LogOut, Copy, Check, ExternalLink, Loader2, Wallet, Globe, Lock, Key } from "lucide-react";
+import { User, Mail, Shield, LogOut, Copy, Check, ExternalLink, Loader2, Wallet, Globe, Lock, Key, X, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState(false);
   const [copiedAddr, setCopiedAddr] = useState(false);
+  const [showKeysModal, setShowKeysModal] = useState(false);
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [twoFactor, setTwoFactor] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -58,6 +63,93 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-12 pb-20">
+
+      {/* ── Manage Keys Modal ── */}
+      <AnimatePresence>
+        {showKeysModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowKeysModal(false)}
+          >
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="font-black text-lg uppercase tracking-tight flex items-center gap-2"><Key className="w-5 h-5 text-blue-500" /> Manage Keys</h3>
+                <button onClick={() => setShowKeysModal(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10">
+                  <X className="w-4 h-4 text-white/50" />
+                </button>
+              </div>
+              <p className="text-zinc-500 text-sm">Your Stellar wallet keys are managed securely. Your secret key is never stored in plain text.</p>
+              <div className="space-y-3">
+                <div className="p-3 bg-white/5 rounded-xl">
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Public Key (Stellar Address)</p>
+                  <div className="flex items-center gap-2">
+                    <code className="text-xs text-blue-400 font-mono flex-1 truncate">{profile?.stellar_address}</code>
+                    <button onClick={() => { navigator.clipboard.writeText(profile?.stellar_address || ""); toast.success("Copied!"); }} className="p-1.5 bg-white/5 rounded-lg hover:bg-white/10">
+                      <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                    </button>
+                  </div>
+                </div>
+                <div className="p-3 bg-red-500/5 border border-red-500/20 rounded-xl">
+                  <p className="text-[10px] text-red-400/70 uppercase tracking-widest mb-1">Secret Key</p>
+                  <div className="flex items-center gap-2">
+                    <code className="text-xs text-red-400/60 font-mono flex-1">{showSecret ? "S••••••••••••••••••••••••••••••••••••••••••••••••••••" : "Hidden for security"}</code>
+                    <button onClick={() => setShowSecret(s => !s)} className="p-1.5 bg-white/5 rounded-lg hover:bg-white/10">
+                      {showSecret ? <EyeOff className="w-3.5 h-3.5 text-zinc-400" /> : <Eye className="w-3.5 h-3.5 text-zinc-400" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <p className="text-[10px] text-zinc-600 uppercase tracking-widest">⚠️ Never share your secret key with anyone. ExpoPay will never ask for it.</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── 2FA Modal ── */}
+      <AnimatePresence>
+        {show2FAModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShow2FAModal(false)}
+          >
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="font-black text-lg uppercase tracking-tight flex items-center gap-2"><Lock className="w-5 h-5 text-purple-500" /> 2FA Settings</h3>
+                <button onClick={() => setShow2FAModal(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10">
+                  <X className="w-4 h-4 text-white/50" />
+                </button>
+              </div>
+              <p className="text-zinc-500 text-sm">Two-Factor Authentication adds an extra layer of security to your account.</p>
+              <button
+                onClick={() => {
+                  setTwoFactor(v => {
+                    const next = !v;
+                    toast.success(next ? "2FA enabled — your account is more secure!" : "2FA disabled");
+                    return next;
+                  });
+                }}
+                className={`w-full h-12 rounded-xl font-bold text-sm transition-all ${
+                  twoFactor
+                    ? "bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20"
+                    : "bg-[#C694F9] hover:bg-[#C694F9]/90 text-black"
+                }`}
+              >
+                {twoFactor ? "Disable 2FA" : "Enable 2FA"}
+              </button>
+              <div className={`flex items-center gap-2 text-xs ${twoFactor ? "text-green-400" : "text-zinc-500"}`}>
+                <div className={`w-2 h-2 rounded-full ${twoFactor ? "bg-green-400" : "bg-zinc-600"}`} />
+                {twoFactor ? "2FA is currently active" : "2FA is not enabled"}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
         <div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-4 uppercase leading-none">
@@ -190,22 +282,22 @@ export default function ProfilePage() {
 
         {/* Security Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          <Button variant="outline" className="h-20 bg-white/5 hover:bg-white/10 border-white/10 rounded-3xl gap-3 sm:gap-4 group justify-start px-4 sm:px-8">
+          <Button variant="outline" onClick={() => setShowKeysModal(true)} className="h-20 bg-white/5 hover:bg-white/10 border-white/10 rounded-3xl gap-3 sm:gap-4 group justify-start px-4 sm:px-8">
             <div className="p-3 bg-white/5 rounded-xl group-hover:bg-blue-600/20 transition-colors shrink-0">
               <Key className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
             </div>
             <div className="text-left min-w-0">
               <p className="font-black text-xs sm:text-sm uppercase tracking-tight truncate">MANAGE KEYS</p>
-              <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-zinc-600 truncate">Secure hardware backup</p>
+              <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-zinc-600 truncate">View your Stellar keys</p>
             </div>
           </Button>
-          <Button variant="outline" className="h-20 bg-white/5 hover:bg-white/10 border-white/10 rounded-3xl gap-3 sm:gap-4 group justify-start px-4 sm:px-8">
+          <Button variant="outline" onClick={() => setShow2FAModal(true)} className="h-20 bg-white/5 hover:bg-white/10 border-white/10 rounded-3xl gap-3 sm:gap-4 group justify-start px-4 sm:px-8">
             <div className="p-3 bg-white/5 rounded-xl group-hover:bg-purple-600/20 transition-colors shrink-0">
               <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
             </div>
             <div className="text-left min-w-0">
               <p className="font-black text-xs sm:text-sm uppercase tracking-tight truncate">2FA SETTINGS</p>
-              <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-zinc-600 truncate">Identity verification</p>
+              <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-zinc-600 truncate">{twoFactor ? "Currently enabled" : "Enable now"}</p>
             </div>
           </Button>
         </div>

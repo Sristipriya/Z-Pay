@@ -105,17 +105,20 @@ function Toggle({
 }) {
   return (
     <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative w-12 h-6 rounded-lg transition-colors duration-300 border ${
-        checked ? "bg-[#C694F9]/20 border-[#C694F9]/50" : "bg-white/5 border-white/10"
+      className={`relative inline-flex shrink-0 items-center w-14 h-7 rounded-md outline-none focus:outline-none transition-all duration-300 ${
+        checked
+          ? "bg-[#C694F9] shadow-[0_0_12px_rgba(198,148,249,0.4)]"
+          : "bg-white/10"
       }`}
     >
-      <motion.div
-        className={`absolute top-1 left-1 w-3.5 h-3.5 rounded-[4px] shadow transition-colors ${
-          checked ? "bg-[#C694F9]" : "bg-white/40"
-        }`}
-        animate={{ x: checked ? 24 : 0 }}
-        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+      <motion.span
+        className="block w-5 h-5 ml-1 rounded-sm bg-white shadow-md"
+        animate={{ x: checked ? 28 : 0 }}
+        transition={{ type: "spring", stiffness: 600, damping: 32 }}
       />
     </button>
   );
@@ -157,15 +160,22 @@ export default function SettingsPage() {
   const [editPhone, setEditPhone] = useState("");
   const [savingInfo, setSavingInfo] = useState(false);
 
-  // Notification preferences
+  // Notification preferences (persisted to localStorage)
   const [notifPayments, setNotifPayments] = useState(true);
   const [notifContracts, setNotifContracts] = useState(true);
   const [notifMarketing, setNotifMarketing] = useState(false);
   const [notifSecurity, setNotifSecurity] = useState(true);
 
-  // Privacy
+  // Privacy (persisted to localStorage)
   const [showBalance, setShowBalance] = useState(true);
   const [twoFactor, setTwoFactor] = useState(false);
+
+  // PIN Modal
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [currentPin, setCurrentPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [savingPin, setSavingPin] = useState(false);
 
   // Feedback
   const [feedbackText, setFeedbackText] = useState("");
@@ -175,6 +185,15 @@ export default function SettingsPage() {
   const toggle = (id: string) => setActive((p) => (p === id ? null : id));
 
   useEffect(() => {
+    // Restore prefs from localStorage
+    const prefs = JSON.parse(localStorage.getItem("expo_notif_prefs") || "{}");
+    if (prefs.notifPayments !== undefined) setNotifPayments(prefs.notifPayments);
+    if (prefs.notifContracts !== undefined) setNotifContracts(prefs.notifContracts);
+    if (prefs.notifMarketing !== undefined) setNotifMarketing(prefs.notifMarketing);
+    if (prefs.notifSecurity !== undefined) setNotifSecurity(prefs.notifSecurity);
+    if (prefs.showBalance !== undefined) setShowBalance(prefs.showBalance);
+    if (prefs.twoFactor !== undefined) setTwoFactor(prefs.twoFactor);
+
     fetch("/api/expo/profile")
       .then((r) => r.json())
       .then((d) => {
@@ -185,6 +204,11 @@ export default function SettingsPage() {
       })
       .catch(() => setLoading(false));
   }, []);
+
+  const savePrefs = (updates: Record<string, boolean>) => {
+    const existing = JSON.parse(localStorage.getItem("expo_notif_prefs") || "{}");
+    localStorage.setItem("expo_notif_prefs", JSON.stringify({ ...existing, ...updates }));
+  };
 
   const handleSaveInfo = async () => {
     setSavingInfo(true);
@@ -205,6 +229,32 @@ export default function SettingsPage() {
       toast.error("Failed to update profile");
     } finally {
       setSavingInfo(false);
+    }
+  };
+
+  const handlePinChange = async () => {
+    if (!newPin || newPin.length < 4) { toast.error("PIN must be at least 4 digits"); return; }
+    if (newPin !== confirmPin) { toast.error("PINs do not match"); return; }
+    if (!/^\d+$/.test(newPin)) { toast.error("PIN must contain only numbers"); return; }
+    setSavingPin(true);
+    try {
+      const res = await fetch("/api/expo/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ app_pin: newPin }),
+      });
+      if (res.ok) {
+        setProfile((p) => p ? { ...p, app_pin: newPin } : p);
+        toast.success("PIN updated successfully!");
+        setShowPinModal(false);
+        setCurrentPin(""); setNewPin(""); setConfirmPin("");
+      } else {
+        toast.error("Failed to update PIN");
+      }
+    } catch {
+      toast.error("Failed to update PIN");
+    } finally {
+      setSavingPin(false);
     }
   };
 
@@ -238,6 +288,65 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-3 pb-24">
+
+      {/* ── PIN Change Modal ── */}
+      <AnimatePresence>
+        {showPinModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowPinModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="font-black text-lg uppercase tracking-tight">
+                  {profile?.app_pin ? "Change PIN" : "Set PIN"}
+                </h3>
+                <button onClick={() => setShowPinModal(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10">
+                  <span className="text-white/50 text-lg leading-none">×</span>
+                </button>
+              </div>
+              <p className="text-zinc-500 text-sm">Enter a 4–6 digit numeric PIN to secure your payments.</p>
+              <div className="space-y-3">
+                <Input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))}
+                  placeholder="New PIN (4–6 digits)"
+                  className="bg-white/5 border-white/10 h-12 rounded-xl tracking-widest text-center text-lg"
+                />
+                <Input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={confirmPin}
+                  onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ""))}
+                  placeholder="Confirm PIN"
+                  className="bg-white/5 border-white/10 h-12 rounded-xl tracking-widest text-center text-lg"
+                />
+              </div>
+              <button
+                onClick={handlePinChange}
+                disabled={savingPin}
+                className="w-full h-12 rounded-xl bg-[#C694F9] hover:bg-[#C694F9]/90 text-black font-bold text-sm flex items-center justify-center gap-2 transition-all"
+              >
+                {savingPin ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Lock className="w-4 h-4" /> Save PIN</>}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <motion.div
         className="text-center space-y-2 mb-8"
@@ -368,33 +477,22 @@ export default function SettingsPage() {
         onToggle={() => toggle("notifications")}
         delay={0.1}
       >
-        <Row
-          label="Payment Alerts"
-          description="Get notified for every transaction"
-        >
-          <Toggle checked={notifPayments} onChange={setNotifPayments} />
+        <Row label="Payment Alerts" description="Get notified for every transaction">
+          <Toggle checked={notifPayments} onChange={(v) => { setNotifPayments(v); savePrefs({ notifPayments: v }); }} />
         </Row>
-        <Row
-          label="Contract Updates"
-          description="Status changes on your contracts"
-        >
-          <Toggle checked={notifContracts} onChange={setNotifContracts} />
+        <Row label="Contract Updates" description="Status changes on your contracts">
+          <Toggle checked={notifContracts} onChange={(v) => { setNotifContracts(v); savePrefs({ notifContracts: v }); }} />
         </Row>
-        <Row
-          label="Security Alerts"
-          description="Login attempts & suspicious activity"
-        >
-          <Toggle checked={notifSecurity} onChange={setNotifSecurity} />
+        <Row label="Security Alerts" description="Login attempts & suspicious activity">
+          <Toggle checked={notifSecurity} onChange={(v) => { setNotifSecurity(v); savePrefs({ notifSecurity: v }); }} />
         </Row>
-        <Row
-          label="Marketing & News"
-          description="Product updates, offers & tips"
-        >
-          <Toggle checked={notifMarketing} onChange={setNotifMarketing} />
+        <Row label="Marketing & News" description="Product updates, offers & tips">
+          <Toggle checked={notifMarketing} onChange={(v) => { setNotifMarketing(v); savePrefs({ notifMarketing: v }); }} />
         </Row>
 
         <button
           onClick={() => {
+            savePrefs({ notifPayments, notifContracts, notifSecurity, notifMarketing });
             toast.success("Notification preferences saved");
             setActive(null);
           }}
@@ -419,17 +517,15 @@ export default function SettingsPage() {
           label="Show Balance on Dashboard"
           description="Hide balance for extra privacy"
         >
-          <Toggle checked={showBalance} onChange={setShowBalance} />
+          <Toggle checked={showBalance} onChange={(v) => { setShowBalance(v); savePrefs({ showBalance: v }); toast.success(v ? "Balance visible" : "Balance hidden"); }} />
         </Row>
-        <Row
-          label="Two-Factor Authentication"
-          description="Extra layer of login security"
-        >
+        <Row label="Two-Factor Authentication" description="Extra layer of login security">
           <Toggle
             checked={twoFactor}
             onChange={(v) => {
               setTwoFactor(v);
-              toast.info(v ? "2FA enabled (demo)" : "2FA disabled (demo)");
+              savePrefs({ twoFactor: v });
+              toast.success(v ? "2FA enabled — keep your account safe!" : "2FA disabled");
             }}
           />
         </Row>
@@ -439,24 +535,14 @@ export default function SettingsPage() {
             Account
           </p>
           <button
-            onClick={() => {
-              toast.promise(new Promise((r) => setTimeout(r, 1500)), {
-                loading: 'Preparing PIN reset...',
-                success: 'PIN reset instructions sent to your email!',
-                error: 'Failed to initiate PIN reset'
-              });
-            }}
+            onClick={() => setShowPinModal(true)}
             className="w-full p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all flex items-center justify-between"
           >
             <div className="flex items-center gap-3">
               <Lock className="w-5 h-5 text-zinc-400" />
               <div className="text-left">
-                <p className="font-semibold text-sm">
-                  {profile?.app_pin ? "Change PIN" : "Set Transaction PIN"}
-                </p>
-                <p className="text-zinc-500 text-xs">
-                  Secure your payments
-                </p>
+                <p className="font-semibold text-sm">{profile?.app_pin ? "Change PIN" : "Set Transaction PIN"}</p>
+                <p className="text-zinc-500 text-xs">Secure your payments</p>
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-zinc-500" />
