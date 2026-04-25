@@ -86,12 +86,33 @@ export default function DashboardPage() {
             contacts.push({
               username: uid,
               display_name: uid,
+              avatar_url: null,
               last_paid_at: tx.created_at,
               currency: tx.currency || 'XLM',
             });
           }
         }
-        setRecentContacts(contacts.slice(0, 8));
+        const sliced = contacts.slice(0, 8);
+        setRecentContacts(sliced);
+
+        // Fetch avatar_url for each contact in background
+        sliced.forEach((contact) => {
+          fetch(`/api/expo/resolve?username=${encodeURIComponent(contact.username)}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+              if (data?.avatar_url) {
+                setRecentContacts(prev =>
+                  prev.map(c =>
+                    c.username === contact.username
+                      ? { ...c, avatar_url: data.avatar_url, display_name: data.display_name || data.full_name || c.username }
+                      : c
+                  )
+                );
+              }
+            })
+            .catch(() => {});
+        });
+
         return currentProfile;
       });
 
@@ -221,8 +242,11 @@ export default function DashboardPage() {
                 transition={{ delay: i * 0.05 }}
                 className="flex flex-col items-center gap-2 min-w-[64px] group cursor-pointer"
               >
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#C694F9]/20 to-[#94A1F9]/20 border border-[#C694F9]/20 flex items-center justify-center font-black text-[#C694F9] text-xl uppercase transition-all group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(198,148,249,0.3)] group-active:scale-95">
-                  {(p.display_name || p.username)[0]}
+                <div
+                  className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#C694F9]/20 to-[#94A1F9]/20 border border-[#C694F9]/20 flex items-center justify-center font-black text-[#C694F9] text-xl uppercase transition-all group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(198,148,249,0.3)] group-active:scale-95 bg-cover bg-center overflow-hidden"
+                  style={{ backgroundImage: p.avatar_url ? `url(${p.avatar_url})` : undefined }}
+                >
+                  {!p.avatar_url && (p.display_name || p.username)[0]}
                 </div>
                 <span className="text-[10px] font-bold text-white/50 truncate w-16 text-center group-hover:text-white/80 transition-colors">
                   {p.display_name || p.username}
