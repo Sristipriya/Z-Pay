@@ -63,8 +63,8 @@ export default function ForgotPasswordPage() {
               className="text-[clamp(2rem,6vw,3rem)] font-black leading-[0.95] tracking-[-0.04em] mb-3 sm:mb-4 uppercase"
               style={{ fontFamily: "var(--font-syne)" }}
             >
-              <span className="block">RESET</span>
-              <span className="block text-[#C694F9]">PASSWORD</span>
+              <span className="block whitespace-nowrap">RESET</span>
+              <span className="block text-[#C694F9] whitespace-nowrap">PASSWORD</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0 }}
@@ -89,13 +89,13 @@ export default function ForgotPasswordPage() {
               </div>
               <p className="text-green-400 font-medium">Check your email for the reset code.</p>
               <p className="text-sm text-zinc-400">If it doesn't appear within a few minutes, check your spam folder.</p>
-              <button
-                onClick={() => router.push(`/auth/verify-reset-otp?email=${encodeURIComponent(email)}`)}
-                className="group relative w-full h-12 sm:h-14 mt-4 bg-white text-black font-black text-sm sm:text-base rounded-xl sm:rounded-2xl overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98]"
+              <Link
+                href={`/auth/verify-reset-otp?email=${encodeURIComponent(email)}`}
+                className="group relative w-full flex items-center justify-center h-12 sm:h-14 mt-4 bg-white text-black font-black text-sm sm:text-base rounded-xl sm:rounded-2xl overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-zinc-200 to-white opacity-0 group-hover:opacity-100 transition-opacity" />
                 <span className="relative">Enter Code</span>
-              </button>
+              </Link>
             </motion.div>
           ) : (
             <motion.form
