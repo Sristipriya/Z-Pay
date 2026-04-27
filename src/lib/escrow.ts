@@ -227,3 +227,34 @@ export function calculateDeadlineLedger(daysFromNow: number): bigint {
   const ledgersPerDay = 17280;
   return BigInt(Math.floor(daysFromNow * ledgersPerDay));
 }
+
+export async function transferExpoToken(
+  fromSecret: string,
+  toAddress: string,
+  amountStroops: bigint
+): Promise<string> {
+  const keypair = StellarSdk.Keypair.fromSecret(fromSecret);
+  const fromAddress = keypair.publicKey();
+
+  const tokenContract = new StellarSdk.Contract(TOKEN_CONTRACT_ID);
+  const account = await server.getAccount(fromAddress);
+
+  const tx = new StellarSdk.TransactionBuilder(account, {
+    fee: '100000',
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .setTimeout(60)
+    .addOperation(
+      tokenContract.call(
+        'transfer',
+        new StellarSdk.Address(fromAddress).toScVal(),
+        new StellarSdk.Address(toAddress).toScVal(),
+        StellarSdk.nativeToScVal(amountStroops, { type: 'i128' })
+      )
+    )
+    .build();
+
+  const prepared = (await server.prepareTransaction(tx)) as StellarSdk.Transaction;
+  const { hash } = await signAndSubmitTransaction(prepared, keypair);
+  return hash;
+}

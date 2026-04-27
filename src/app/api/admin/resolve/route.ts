@@ -41,11 +41,14 @@ export async function POST(request: Request) {
     const payFreelancer = resolution === 'pay_freelancer';
     const newStatus     = payFreelancer ? 'released' : 'refunded';
 
-    // The deployed escrow contract (CAGMD6PB...) does NOT export a `resolve`
-    // function. It only exposes `release` (payer -> freelancer) and
-    // `refund` (payer -> payer), both of which require the payer's signature.
-    // Since ExpoPay is custodial, the backend signs on behalf of the payer
-    // when the arbiter forces an outcome.
+    // Deployed contract notes:
+    //   • `release` panics in Disputed state (only accepts Delivered)
+    //   • `refund`  works fine in Disputed and returns funds to the payer
+    // So when arbiter sides with the freelancer, we do it in two on-chain steps:
+    //   1) refund escrow back to payer
+    //   2) transfer that amount from payer's wallet to freelancer (SEP-41)
+    // ExpoPay is custodial so the backend signs both with the payer's secret.
+
     const { data: payerProfile } = await supabaseAdmin
       .from('profiles')
       .select('stellar_secret')
@@ -59,10 +62,37 @@ export async function POST(request: Request) {
       );
     }
 
-    const { releaseEscrow, refundEscrow } = await import('@/lib/escrow');
-    const txHash = payFreelancer
-      ? await releaseEscrow(Number(contract.escrow_id), payerProfile.stellar_secret)
-      : await refundEscrow(Number(contract.escrow_id), payerProfile.stellar_secret);
+    const { refundEscrow, transferExpoToken } = await import('@/lib/escrow');
+
+    // Step 1: always refund the escrow back to the payer's wallet
+    const refundTx = await refundEscrow(
+      Number(contract.escrow_id),
+      payerProfile.stellar_secret
+    );
+
+    let payoutTx: string | undefined;
+
+    if (payFreelancer) {
+      // Step 2: forward the funds from payer -> freelancer
+      if (!contract.freelancer_stellar_address) {
+        return NextResponse.json(
+          { error: "Freelancer's wallet address missing on contract." },
+          { status: 500 }
+        );
+      }
+
+      // contract.amount is stored as display units (e.g. 100), on-chain is stroops
+      const amountStroops = BigInt(Math.floor(parseFloat(contract.amount) * 10_000_000));
+
+      payoutTx = await transferExpoToken(
+        payerProfile.stellar_secret,
+        contract.freelancer_stellar_address,
+        amountStroops
+      );
+    }
+
+    // Final tx hash users see = the one that landed funds in the right place
+    const txHash = payFreelancer ? (payoutTx as string) : refundTx;
 
     await supabaseAdmin
       .from('contracts')
@@ -70,11 +100,12 @@ export async function POST(request: Request) {
         status: newStatus,
         [payFreelancer ? 'released_at' : 'refunded_at']: new Date().toISOString(),
         [payFreelancer ? 'tx_hash_release' : 'tx_hash_refund']: txHash,
+        // Optional: keep an audit trail of the intermediate refund step
+        ...(payFreelancer ? { tx_hash_refund: refundTx } : {}),
       })
       .eq('id', contract_id);
 
     if (payFreelancer) {
-      // Record the transaction for the freelancer
       await supabaseAdmin
         .from('transactions')
         .insert({
@@ -90,7 +121,6 @@ export async function POST(request: Request) {
           purpose:                'Dispute Resolution',
         });
     } else {
-      // Record refund for the client
       await supabaseAdmin
         .from('transactions')
         .insert({
@@ -122,7 +152,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Dispute resolved successfully. ${payFreelancer ? 'Funds sent to Freelancer.' : 'Funds refunded to Client.'}`
+      message: `Dispute resolved successfully. ${
+        payFreelancer ? 'Funds sent to Freelancer.' : 'Funds refunded to Client.'
+      }`,
     });
   } catch (error: any) {
     console.error('Resolve error:', error);

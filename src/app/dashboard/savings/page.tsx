@@ -60,7 +60,7 @@ export default function SavingsPage() {
             Stake EXPO or deposit XLM to earn rewards on-chain via Stellar smart contracts.
           </p>
           <div className="mt-4 flex items-start gap-2 bg-amber-500/5 border border-amber-500/15 rounded-2xl px-4 py-3">
-            <span className="text-amber-400 text-sm shrink-0">⚠️</span>
+            <span className="text-amber-400 text-sm shrink-0"></span>
             <p className="text-[10px] text-amber-400/60 font-medium leading-relaxed">
               Staking rewards are taxable as VDA income at 30% under the Income Tax Act, 1961. Returns are variable and not guaranteed.
             </p>
@@ -102,7 +102,7 @@ export default function SavingsPage() {
                   />
                 )}
                 <span className={cn("relative z-10 transition-colors", activeTab === tab ? "text-[#C694F9]" : "text-white/30")}>
-                  {tab === "staking" ? "🔒 EXPO Staking" : "💧 XLM Pool"}
+                  {tab === "staking" ? " EXPO Staking" : " XLM Pool"}
                 </span>
               </button>
             ))}
@@ -323,7 +323,7 @@ function StakeCard({ stake, onAction }: any) {
       {isActive && (
         <div>
           <div className="flex justify-between text-[10px] font-bold text-white/30 mb-2">
-            <span>{isUnlocked ? "✅ Ready to unstake" : `Unlocks ${formatDistanceToNow(new Date(stake.unlocks_at), { addSuffix: true })}`}</span>
+            <span>{isUnlocked ? " Ready to unstake" : `Unlocks ${formatDistanceToNow(new Date(stake.unlocks_at), { addSuffix: true })}`}</span>
             <span>{format(new Date(stake.unlocks_at), 'MMM d, yyyy')}</span>
           </div>
           <LockProgress stakedAt={stake.staked_at} unlocksAt={stake.unlocks_at} />
