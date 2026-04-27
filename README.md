@@ -1,448 +1,585 @@
-# EXPO - Global Payment Router
+<div align="center">
 
-A cross-border payment platform built on the Stellar blockchain. EXPO enables instant, low-cost international payments with Universal IDs, smart escrow contracts, and seamless fiat to crypto conversion.
+<img width="380" alt="ExpoPay logo" src="https://github.com/user-attachments/assets/101d4866-070b-410b-a6ca-fdbce03a7cc2" />
 
-<img width="379" height="101" alt="image" src="https://github.com/user-attachments/assets/101d4866-070b-410b-a6ca-fdbce03a7cc2" />
+# ExpoPay — Global Payment Router
 
-## 🔗 Live Demo
-[https://expopay.vercel.app](https://exporouter.site)
+**Cross-border payments, escrow, group bills, and on-chain savings — all on Stellar.**
 
+ExpoPay turns wallet addresses into human-readable Universal IDs (`alice@expo`), settles payments in seconds via Stellar, lets Indian merchants receive INR via UPI, lets freelancers and clients lock funds in Soroban escrow, lets friends split bills, and lets users earn yield on EXPO and XLM through on-chain staking and a deposit pool.
 
-## ⚙️ CI/CD Pipeline
-![CI/CD](https://github.com/Div1912/ExpoPay/actions/workflows/ci.yml/badge.svg)
-![CI Passing](./screenshots/ci-passing.png)
+[**Live demo →**](https://exporouter.site) &nbsp;·&nbsp; ![CI](https://github.com/Div1912/ExpoPay/actions/workflows/ci.yml/badge.svg)
 
-## Overview
+</div>
 
-EXPO is a full-stack Web3 payment application that combines:
-- **Universal Identity System** - Human-readable payment addresses (`username@expo`)
-- **Instant P2P Transfers** - Send money globally in seconds via Stellar
-- **Smart Escrow Contracts** - Soroban-based escrow for secure freelancer payments
-- **Cross-Border Merchant Payments** - Pay Indian merchants with crypto (they receive INR via UPI)
-- **Multi-Currency Support** - Automatic FX conversion between XLM, USDC, INR, USD, EUR, GBP
+---
 
-## Features
+## Table of Contents
 
-### Core Payment Features
-- **Universal ID Resolution** - Send to `alice@expo` instead of complex wallet addresses
-- **Real-time FX Quotes** - Live exchange rates with locked pricing windows
-- **QR Code Payments** - Scan to pay with instant settlement
-- **Transaction History** - Complete audit trail with Stellar Explorer links
+1. [Highlights](#highlights)
+2. [Feature tour with screenshots](#feature-tour)
+3. [Architecture](#architecture)
+4. [Smart contracts](#smart-contracts-soroban)
+5. [API reference](#api-reference)
+6. [Database schema](#database-schema)
+7. [Environment variables](#environment-variables)
+8. [Getting started](#getting-started)
+9. [Project structure](#project-structure)
+10. [Security notes](#security-notes)
+11. [Roadmap](#roadmap)
 
-### Escrow Smart Contracts
+---
 
-- **On-Chain Escrow** - Funds locked in Soroban smart contracts
-- **Milestone-Based Release** - Freelancer marks delivered, client releases funds
-- **Dispute Resolution** - Built-in dispute and refund mechanisms
-- **Deadline Enforcement** - Auto-refund on expiry
+## Highlights
 
-### Merchant Payments (India)
+- **Universal IDs** — send to `alice@expo` instead of a 56-char Stellar public key.
+- **Instant P2P** — XLM/USDC/INR P2P transfers settled on Stellar in ~3 seconds.
+- **Escrow with arbiter** — Soroban contract handles fund/deliver/release/dispute/resolve. Two-step arbiter override pays the freelancer even when the on-chain `release` is locked.
+- **Split bills** — equal or custom-share bill splitting across `@expo` users, with per-participant payment tracking and notifications.
+- **On-chain Vault** — fixed-term EXPO staking (30/60/90 days, up to 6%) plus a no-lock XLM yield pool that mints EXPO rewards daily. Live accrual UI, compound projection, and a real-time earnings ticker.
+- **Indian UPI bridge** — pay any UPI QR with crypto; merchant receives INR.
+- **Cross-currency FX** — XLM ↔ USDC ↔ INR/USD/EUR/GBP with locked-window quotes.
+- **Inactivity guard, transaction PINs, on-chain audit trail** — every action emits a Stellar tx hash you can verify on Stellar Expert.
 
-- **UPI Integration** - Pay any Indian UPI QR code
-- **Crypto-to-INR** - Your XLM/USDC converted to INR instantly
-- **RBI LRS Compliant** - Follows Liberalised Remittance Scheme guidelines
-- **Demo Merchants** - Test with simulated Indian merchants
+---
 
-### Security
-- **4-Digit PIN Protection** - All transactions require PIN authorization
-- **On-Chain Settlement** - All payments recorded on Stellar blockchain
-- **Non-Custodial Design** - Users control their own keys
+## Feature tour
 
+> 🖼️ The Split and Vault sections have placeholders below. **Drop screenshots into `screenshots/` (or paste GitHub-attached image URLs) and replace the placeholder lines** — paths and alt-text are already in place.
 
-## App screnshots
+### 1 · Dashboard overview
 
-Dashboard
-<img width="242" height="486" alt="Screenshot 2026-01-25 072624" src="https://github.com/user-attachments/assets/367f01ff-e920-491f-8d78-023a14187ce5" />
+The home of the app — wallet balance, recent transactions, quick actions for Send/Scan/Split/Vault.
 
+<img width="320" alt="Dashboard overview" src="https://github.com/user-attachments/assets/367f01ff-e920-491f-8d78-023a14187ce5" />
 
-<img width="776" height="846" alt="Screenshot 2026-01-25 112325" src="https://github.com/user-attachments/assets/b3a35739-9623-456e-ac69-d6e35458169e" />
+### 2 · Pay Indian merchants with crypto
 
-*Pay with your Crypto on local shops in India*
-<img width="515" height="709" alt="Screenshot 2026-01-25 112225" src="https://github.com/user-attachments/assets/c44a7676-74ca-4969-a7fb-6656e3370c50" />
+Scan any UPI QR or pick a demo merchant. The platform converts XLM/USDC to INR at a locked rate and settles UPI to the merchant.
 
+<img width="780" alt="Merchant payment flow" src="https://github.com/user-attachments/assets/b3a35739-9623-456e-ac69-d6e35458169e" />
 
-<img width="610" height="901" alt="Screenshot 2026-01-25 081541" src="https://github.com/user-attachments/assets/f2e427a8-8c75-4761-9dc9-191b6bf0fef2" />
+<img width="520" alt="Pay with crypto at local Indian shops" src="https://github.com/user-attachments/assets/c44a7676-74ca-4969-a7fb-6656e3370c50" />
 
-<img width="708" height="743" alt="Screenshot 2026-01-25 112310" src="https://github.com/user-attachments/assets/557ed12f-7777-464f-9c98-13ec884b8fdb" />
-*Transaction History*
+### 3 · P2P send
 
-*Verify Transaction on Stellar Explorer*
-<img width="1376" height="845" alt="image" src="https://github.com/user-attachments/assets/92d14866-38c6-4fa0-92a8-57f3886e814d" />
+Send to `bob@expo` instead of `GAB6F…`. Cross-currency sends show a live FX quote with a locked window.
 
+<img width="610" alt="Send money to Universal ID" src="https://github.com/user-attachments/assets/f2e427a8-8c75-4761-9dc9-191b6bf0fef2" />
 
-*Escrow -Create contract for your Work (between freelancer seller and buyer using Soroban Smart Contract*
-<img width="1349" height="745" alt="image" src="https://github.com/user-attachments/assets/65e66871-3955-4cb9-9899-0dafebdb9110" />
+### 4 · Transaction history
 
-### CI/CD Pipeline — GitHub Actions
-![CI Passing](./screenshots/ci-passing.png)
+Every payment, escrow action, split contribution, and vault event in one place — each row links to Stellar Expert for on-chain verification.
 
-## Tech Stack
+<img width="700" alt="Transaction history" src="https://github.com/user-attachments/assets/557ed12f-7777-464f-9c98-13ec884b8fdb" />
 
-### Frontend
-- **Next.js 15** - React framework with App Router
-- **TypeScript** - Type-safe development
-- **Tailwind CSS 4** - Utility-first styling
-- **Framer Motion** - Smooth animations
-- **GSAP** - Advanced scroll animations
-- **Radix UI** - Accessible component primitives
-- **Lucide Icons** - Beautiful icon set
+<img width="1200" alt="Verify transaction on Stellar Explorer" src="https://github.com/user-attachments/assets/92d14866-38c6-4fa0-92a8-57f3886e814d" />
 
-### Backend
-- **Next.js API Routes** - Serverless functions
-- **Supabase** - PostgreSQL database + Auth + Realtime
-- **Stellar SDK** - Blockchain interactions for settling Merchant and P2P payments
+### 5 · Soroban escrow contracts
 
-### Blockchain
-- **Stellar Network** - Fast, low-cost transactions (~$0.00001 per tx)
-- **Soroban Smart Contracts** - Rust-based escrow logic for creating contract between deller and buyer
-- **Horizon API** - Account management and queries
+Lock funds in a Soroban contract, mark delivered, release on completion. If something goes wrong, either party can dispute and an arbiter resolves it on-chain.
 
-### Infrastructure
-- **Supabase Auth** - Phone/email authentication
-- **Supabase Realtime** - Live transaction updates
-- **PostgreSQL** - User profiles, transaction history, contracts
+<img width="1200" alt="Escrow contract dashboard" src="https://github.com/user-attachments/assets/65e66871-3955-4cb9-9899-0dafebdb9110" />
 
-## Project Structure
+### 6 · Split bills *(new)*
+
+Create a bill, pick `@expo` participants, choose **Equal** or **Custom shares**, and the app tracks who's paid and who hasn't. Each participant pays from their own balance with a single tap; the creator gets a real-time view of contributions plus email notifications when someone pays.
+
+<!-- TODO: replace with actual screenshots -->
+> 📷 **Add screenshot:** new-split form (`screenshots/split-new.png`)
+>
+> ```
+> ![Create new split](./screenshots/split-new.png)
+> ```
+
+> 📷 **Add screenshot:** split detail page with participant list (`screenshots/split-detail.png`)
+>
+> ```
+> ![Split detail and tracking](./screenshots/split-detail.png)
+> ```
+
+> 📷 **Add screenshot:** participant pay-in flow (`screenshots/split-pay.png`)
+>
+> ```
+> ![Participant paying their share](./screenshots/split-pay.png)
+> ```
+
+What's under the hood:
+
+- `split_bills` + `split_participants` tables track totals and per-user shares
+- Each pay-in is an on-chain Stellar payment from participant → creator
+- Status transitions: `active` → `partial` → `paid` (auto when all participants settle)
+
+### 7 · Vault — staking + yield pool *(new)*
+
+Two products in one tab. Live earnings ticker, animated stake progress, and a built-in compound-interest projection.
+
+#### Staking
+
+Lock EXPO for 30, 60, or 90 days for **1.25% / 3.00% / 6.00%** flat reward (≈15 / 18 / 24% APR). Each active stake card shows current value, time remaining, accrued reward (animated 1 Hz), and progress %.
+
+> 📷 **Add screenshot:** Vault overview with tier cards (`screenshots/vault-overview.png`)
+>
+> ```
+> ![Vault overview with tier cards](./screenshots/vault-overview.png)
+> ```
+
+> 📷 **Add screenshot:** Active stake card with live counters (`screenshots/vault-active-stake.png`)
+>
+> ```
+> ![Active stake with live current value and countdown](./screenshots/vault-active-stake.png)
+> ```
+
+> 📷 **Add screenshot:** Stake creation flow (`screenshots/vault-stake-form.png`)
+>
+> ```
+> ![Stake amount and lock period selection](./screenshots/vault-stake-form.png)
+> ```
+
+#### Compound projection (innovation)
+
+Drag the slider for amount, tap a tier — see what auto-rolling that tier yields vs simple interest over a year, with the true APY computed via discrete compounding `P × (1+r)^n − P`.
+
+> 📷 **Add screenshot:** Compound projection panel (`screenshots/vault-compound.png`)
+>
+> ```
+> ![Compound vs simple interest projection](./screenshots/vault-compound.png)
+> ```
+
+#### XLM Yield Pool
+
+Deposit XLM with **no lock-up**, earn EXPO at 0.5% per XLM per day (~18% APR). Withdraw anytime; rewards accrue linearly and are paid out in EXPO from the pool's reward bucket on withdrawal.
+
+> 📷 **Add screenshot:** XLM Pool tab (`screenshots/vault-pool.png`)
+>
+> ```
+> ![XLM yield pool tab](./screenshots/vault-pool.png)
+> ```
+
+### 8 · CI / CD
+
+Every push runs the `ci.yml` workflow: typecheck, lint, build, contract test suite.
+
+![CI passing](./screenshots/ci-passing.png)
+
+---
+
+## Architecture
 
 ```
-expo/
-├── contracts/
-│   └── escrow/
-│       └── src/
-│           └── lib.rs          # Soroban escrow smart contract
-├── src/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── contracts/      # Escrow API routes
-│   │   │   │   ├── route.ts    # Create contract
-│   │   │   │   ├── deliver/    # Mark delivered
-│   │   │   │   ├── release/    # Release funds
-│   │   │   │   ├── dispute/    # Raise dispute
-│   │   │   │   └── refund/     # Request refund
-│   │   │   ├── expo/           # Core user APIs
-│   │   │   │   ├── balance/    # Get wallet balance
-│   │   │   │   ├── profile/    # User profile
-│   │   │   │   ├── resolve/    # Resolve Universal ID
-│   │   │   │   └── pin/        # PIN management
-│   │   │   ├── payments/       # P2P payment APIs
-│   │   │   │   ├── send/       # Send payment
-│   │   │   │   └── history/    # Transaction history
-│   │   │   ├── merchant/       # Merchant payment APIs
-│   │   │   │   ├── pay/        # Process merchant payment
-│   │   │   │   ├── quote/      # Get XLM->INR quote
-│   │   │   │   └── history/    # Merchant payment history
-│   │   │   └── fx/
-│   │   │       └── quote/      # FX rate quotes
-│   │   ├── auth/               # Authentication pages
-│   │   │   ├── login/
-│   │   │   ├── signup/
-│   │   │   └── callback/
-│   │   ├── dashboard/          # Main app pages
-│   │   │   ├── page.tsx        # Dashboard overview
-│   │   │   ├── send/           # Send money
-│   │   │   ├── receive/        # Receive (show QR)
-│   │   │   ├── scan/           # Scan QR to pay
-│   │   │   ├── merchant/       # Pay UPI merchants
-│   │   │   ├── contracts/      # Escrow contracts
-│   │   │   ├── history/        # Transaction history
-│   │   │   ├── profile/        # Wallet & security
-│   │   │   └── settings/       # App settings
-│   │   └── page.tsx            # Landing page
-│   ├── components/
-│   │   ├── sections/           # Landing page sections
-│   │   │   ├── Hero.tsx
-│   │   │   ├── QuickActions.tsx
-│   │   │   ├── CardsSection.tsx
-│   │   │   └── ...
-│   │   └── ui/                 # Reusable UI components
-│   ├── lib/
-│   │   ├── stellar.ts          # Stellar SDK wrapper
-│   │   ├── escrow.ts           # Soroban contract interactions
-│   │   ├── supabase.ts         # Supabase clients
-│   │   ├── supabase-server.ts  # Server-side auth
-│   │   ├── fx-service.ts       # Exchange rate service
-│   │   └── upi-service.ts      # UPI QR parsing
-│   └── hooks/                  # Custom React hooks
-└── public/                     # Static assets
+┌─────────────────────┐         ┌──────────────────────┐
+│   Next.js 15 App    │ ──────▶ │  /api/* Route        │
+│   (App Router,      │         │   Handlers           │
+│    Framer Motion,   │         │   (server-only)      │
+│    Tailwind 4)      │         └──────────┬───────────┘
+└─────────────────────┘                    │
+       ▲                                   │
+       │                          ┌────────┼────────┐
+       │                          ▼        ▼        ▼
+       │                    ┌──────────┐ ┌──────┐ ┌────────────┐
+       │                    │ Supabase │ │  FX  │ │  Stellar   │
+       │                    │ (PG +    │ │ rates│ │   SDK +    │
+       │                    │  Auth +  │ └──────┘ │  Soroban   │
+       │                    │ Realtime)│          │  contracts │
+       │                    └──────────┘          └─────┬──────┘
+       │                                                │
+       │                                                ▼
+       │                                       ┌──────────────────┐
+       │  Realtime channel (Supabase) ◀──────  │  Stellar Testnet │
+       │  for live transaction & split status  │  (Soroban + base │
+       │                                       │   asset network) │
+       └───────────────────────────────────────┴──────────────────┘
 ```
 
-## Smart Contract (Soroban)
+---
 
-The escrow contract (`contracts/escrow/src/lib.rs`) provides:
+## Smart contracts (Soroban)
 
-### Functions
-| Function | Description | Inter-Contract Call |
+Three contracts are deployed and used in production:
+
+### Escrow — `contracts/escrow/src/lib.rs`
+
+| Function | Description | Inter-contract call |
 |---|---|---|
-| `create` | Create escrow with EXPO token_id | — |
-| `fund` | Client locks EXPO tokens in escrow | ✅ Client → Escrow (EXPO token) |
+| `create` | Create an escrow with EXPO `token_id` | — |
+| `fund` | Client locks EXPO tokens in escrow | ✅ Client → Escrow |
 | `deliver` | Freelancer marks work as delivered | — |
-| `release_funds` | Client releases EXPO tokens to freelancer | ✅ Escrow → Freelancer (EXPO token) |
-| `cancel_escrow` | Cancel and refund EXPO tokens to client | ✅ Escrow → Client (EXPO token) |
-| `dispute` | Raise a dispute | — |
-| `resolve` | Arbiter distributes EXPO tokens to winner | ✅ Escrow → Winner (EXPO token) |
-| `get_escrow` | Query escrow state | — |
-| `get_escrow_count` | Get total escrow count | — |
+| `release` | Client releases EXPO to freelancer | ✅ Escrow → Freelancer |
+| `refund` | Cancel and refund EXPO to client | ✅ Escrow → Client |
+| `dispute` | Either party raises a dispute | — |
+| `resolve` | Arbiter distributes EXPO to winner *(superseded — see note below)* | ✅ Escrow → Winner |
+| `get` | Query escrow state | — |
 
-### Escrow States
-```
-Funded -> Delivered -> Released
-   |
-   v
-Disputed -> Refunded
-```
+**Arbiter resolution note.** The current testnet build is a pre-`resolve` revision. Arbiter outcomes are handled in the API by:
+- *Refund client* → `refund(escrow_id)` signed by the payer.
+- *Pay freelancer* → `refund(escrow_id)` then a SEP-41 `transfer` from the payer's wallet to the freelancer's, both signed custodially. Net result equals a single resolve-to-freelancer call.
 
-### Deployed Contracts (Stellar Testnet)
+### Staking — `contracts/staking/src/lib.rs`
+
+| Function | Description |
+|---|---|
+| `init` | Set the EXPO token address and admin (one-time) |
+| `stake` | Lock EXPO for 30/60/90 days, returns `stake_id` |
+| `unstake` | Burn the stake position, payout = principal + reward |
+| `get_stake` | Query a single stake by id |
+| `get_pool_balance` | View remaining reward pool |
+| `fund_pool` | Admin tops up the reward pool |
+
+Reward math: linear, flat-rate `reward = amount × bps / 10000` over the lock duration. Stake states: `active → claimed`. Reward bps by tier: 30d → 125, 60d → 300, 90d → 600.
+
+### XLM Yield Pool — `contracts/pool/src/lib.rs`
+
+| Function | Description |
+|---|---|
+| `init` | Set EXPO reward token + admin |
+| `deposit` | Lock XLM, returns `position_id` |
+| `withdraw` | Return principal + EXPO accrued |
+| `get_position` | Query a deposit |
+| `fund_rewards` | Admin tops up the EXPO reward bucket |
+
+Reward math: linear time-based accrual `accrued_expo = xlm_amount × BASE_REWARD_BPS_PER_DAY × elapsed_days / 10000` with `BASE_REWARD_BPS_PER_DAY = 50` (≈18% APR).
+
+### Deployed contract IDs (Stellar Testnet)
+
 | Contract | Address |
 |---|---|
-| Escrow Contract | `CAGMD6PBDSOSB2NDOE5ZGYCWH74EOBJFHM627WTGLZZF66DBRUFWYSPT` |
-| EXPO Token Contract | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
+| Escrow | `CAGMD6PBDSOSB2NDOE5ZGYCWH74EOBJFHM627WTGLZZF66DBRUFWYSPT` |
+| EXPO Token | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
+| Staking & Pool | Set via `STAKING_CONTRACT_ID` / `POOL_CONTRACT_ID` env vars |
 
-### 🔁 Inter-Contract Call Transaction
+### Inter-contract call proof
+
 - **Tx Hash:** `d62faff341a803b549c7c244acb0e1fd502823ee4f9ce815c51cd9eebd473f76`
 - **Explorer:** [View on Stellar Expert](https://stellar.expert/explorer/testnet/tx/d62faff341a803b549c7c244acb0e1fd502823ee4f9ce815c51cd9eebd473f76)
-- **Ledger:** `667150` | **Type:** `invoke_host_function` (Soroban escrow `create` with inter-contract token transfer)
-- **Source Account:** `GDFBFIXWI7GJOZ3554UPFZ2373RBFVG33JPBQSJMOZA54BOP5RDZAWVL`
+- **Ledger:** `667150` · **Type:** `invoke_host_function` (escrow `create` calling EXPO token `transfer`)
 
-## API Routes
+---
+
+## API reference
+
+### Auth
+All routes use Supabase session cookies (`getUser()` server-side). Routes that move funds require the user to have set their 4-digit transaction PIN.
 
 ### Payments
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/payments/send` | POST | Send P2P payment |
-| `/api/payments/history` | GET | Get transaction history |
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/payments/send` | Send P2P payment by Universal ID |
+| GET | `/api/payments/history` | User's transaction history |
 
-### Escrow Contracts
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/contracts` | GET | List user's contracts |
-| `/api/contracts` | POST | Create new contract |
-| `/api/contracts/deliver` | POST | Mark as delivered |
-| `/api/contracts/release` | POST | Release funds |
-| `/api/contracts/dispute` | POST | Raise dispute |
-| `/api/contracts/refund` | POST | Request refund |
+### Universal ID & wallet
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/expo/profile` | Get user profile |
+| GET | `/api/expo/balance` | Wallet balances (XLM, EXPO, …) |
+| GET | `/api/expo/resolve?username=…` | Resolve `@expo` ID to a Stellar address |
+| POST | `/api/expo/claim` | Claim a Universal ID and create wallet |
+| GET | `/api/expo/check` / `check-phone` | Availability checks |
+| POST | `/api/expo/pin` | Set or change the 4-digit PIN |
 
-### User
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/expo/profile` | GET | Get user profile |
-| `/api/expo/balance` | GET | Get wallet balances |
-| `/api/expo/resolve` | GET | Resolve Universal ID |
-| `/api/expo/pin` | POST | Set/update PIN |
+### Escrow contracts
+| Method | Endpoint | Description |
+|---|---|---|
+| GET / POST | `/api/contracts` | List / create escrow |
+| POST | `/api/contracts/fund` | Fund an escrow |
+| POST | `/api/contracts/deliver` | Mark as delivered |
+| POST | `/api/contracts/release` | Release funds (payer) |
+| POST | `/api/contracts/dispute` | Raise dispute (either party) |
+| POST | `/api/contracts/refund` | Refund (payer) or auto-claim (freelancer after 7d) |
+| GET | `/api/admin/contracts` | List escalated disputes (arbiter only) |
+| POST | `/api/admin/resolve` | Force-resolve a dispute (arbiter only) |
 
-### Merchant
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/merchant/quote` | POST | Get INR conversion quote |
-| `/api/merchant/pay` | POST | Process merchant payment |
-| `/api/merchant/history` | GET | Merchant payment history |
+### Split bills *(new)*
+| Method | Endpoint | Description |
+|---|---|---|
+| GET / POST | `/api/split` | List / create a split bill |
+| GET | `/api/split/[id]` | Detail, including participants and statuses |
+| POST | `/api/split/[id]/pay` | Settle current user's share |
 
-## Environment Variables
+### Vault — staking & pool *(new)*
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/savings/positions` | All stakes + pool positions, with live current-value, accrued rewards, time remaining, summary aggregates |
+| POST | `/api/savings/stake` | Stake EXPO for 30/60/90 days |
+| POST | `/api/savings/unstake` | Unstake matured position; pays principal + reward |
+| POST | `/api/savings/pool/deposit` | Deposit XLM into the yield pool |
+| POST | `/api/savings/pool/withdraw` | Withdraw XLM principal + accrued EXPO |
 
-Create a `.env` file with:
+### Merchant (UPI bridge)
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/merchant/quote` | Get XLM↔INR quote |
+| POST | `/api/merchant/pay` | Process merchant payment + simulate UPI settlement |
+| GET | `/api/merchant/history` | Merchant payment history |
+
+### FX
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/fx/quote` | Live FX rate between any supported pair |
+
+---
+
+## Database schema
+
+Three migration files live at the repo root:
+- `supabase_migration.sql` — core tables (profiles, transactions, contracts, merchant_payments)
+- `supabase_split_migration.sql` — `split_bills`, `split_participants`
+- `supabase_savings_migration.sql` — `staking_positions`, `pool_positions`
+
+### `profiles`
+```
+id, universal_id, stellar_address, stellar_secret, full_name,
+phone, preferred_currency, app_pin, avatar_url, verified, created_at
+```
+
+### `transactions`
+```
+id, sender_id, recipient_id, sender_universal_id, recipient_universal_id,
+amount, currency, tx_hash, status, note, purpose, created_at
+```
+
+### `contracts`
+```
+id, escrow_id, payer_id, freelancer_id, payer_universal_id,
+freelancer_universal_id, amount, currency, title, description,
+status, expiry_timestamp, disputed_by, dispute_after_delivery,
+delivered_at, released_at, refunded_at,
+tx_hash_create, tx_hash_release, tx_hash_refund, created_at
+```
+
+### `merchant_payments`
+```
+id, user_id, merchant_name, merchant_upi_id,
+inr_amount, xlm_amount, rate, tx_hash, status, created_at
+```
+
+### `split_bills`  *(new)*
+```
+id, creator_id, creator_universal_id, title, description,
+total_amount, currency, status (active|partial|paid|cancelled),
+created_at
+```
+
+### `split_participants`  *(new)*
+```
+id, split_id, user_id, universal_id, share_amount,
+paid_amount, status (pending|paid), tx_hash, paid_at
+```
+
+### `staking_positions`  *(new)*
+```
+id, user_id, universal_id, stake_id, amount_expo, duration_days,
+reward_bps, reward_expo, status (active|completed),
+tx_hash_stake, tx_hash_unstake, staked_at, unlocks_at, unstaked_at
+```
+
+### `pool_positions`  *(new)*
+```
+id, user_id, universal_id, position_id, amount_xlm, expo_earned,
+status (active|withdrawn), tx_hash_deposit, tx_hash_withdraw,
+deposited_at, withdrawn_at
+```
+
+---
+
+## Environment variables
+
+Create `.env` from `.env.example`:
 
 ```env
 # Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_key
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...           # server-only — REQUIRED in production
 
 # Stellar
 SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
 STELLAR_NETWORK_PASSPHRASE=Test SDF Network ; September 2015
+PLATFORM_SECRET_KEY=...                 # platform wallet for merchant settlement
+
+# Soroban contract IDs (testnet)
 ESCROW_CONTRACT_ID=CAGMD6PBDSOSB2NDOE5ZGYCWH74EOBJFHM627WTGLZZF66DBRUFWYSPT
 TOKEN_CONTRACT_ID=CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+STAKING_CONTRACT_ID=...                 # set after deploying contracts/staking
+POOL_CONTRACT_ID=...                    # set after deploying contracts/pool
+
+# Public mirrors (used in the browser)
 NEXT_PUBLIC_ESCROW_CONTRACT_ID=CAGMD6PBDSOSB2NDOE5ZGYCWH74EOBJFHM627WTGLZZF66DBRUFWYSPT
 NEXT_PUBLIC_TOKEN_CONTRACT_ID=CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
-PLATFORM_SECRET_KEY=your_platform_wallet_secret
+
+# Email (optional, for notifications)
+RESEND_API_KEY=...
+NOTIFY_FROM_EMAIL="ExpoPay <noreply@yourdomain>"
 
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-## Database Schema
+> ⚠️ The server now refuses to start in `production` if `SUPABASE_SERVICE_ROLE_KEY` is missing — a deliberate guardrail so admin writes can't silently fall back to anon.
 
-### profiles
-```sql
-- id (uuid, PK)
-- universal_id (text, unique)  -- e.g., "alice"
-- stellar_address (text)       -- Public key
-- stellar_secret (text)        -- Encrypted secret
-- full_name (text)
-- phone (text)
-- preferred_currency (text)    -- XLM, USDC, INR, USD, EUR
-- app_pin (text)              -- 4-digit PIN hash
-- verified (boolean)
-- created_at (timestamp)
-```
+---
 
-### transactions
-```sql
-- id (uuid, PK)
-- sender_id (uuid, FK)
-- recipient_id (uuid, FK)
-- sender_universal_id (text)
-- recipient_universal_id (text)
-- amount (decimal)
-- currency (text)
-- tx_hash (text)              -- Stellar transaction hash
-- status (text)
-- note (text)
-- purpose (text)
-- created_at (timestamp)
-```
-
-### contracts
-```sql
-- id (uuid, PK)
-- escrow_id (integer)         -- On-chain escrow ID
-- payer_id (uuid, FK)
-- freelancer_id (uuid, FK)
-- payer_universal_id (text)
-- freelancer_universal_id (text)
-- amount (decimal)
-- currency (text)
-- title (text)
-- description (text)
-- status (text)               -- funded, delivered, released, disputed, refunded
-- expiry_timestamp (bigint)
-- tx_hash_create (text)
-- tx_hash_release (text)
-- tx_hash_refund (text)
-- created_at (timestamp)
-```
-
-### merchant_payments
-```sql
-- id (uuid, PK)
-- user_id (uuid, FK)
-- merchant_name (text)
-- merchant_upi_id (text)
-- inr_amount (decimal)
-- xlm_amount (decimal)
-- rate (decimal)
-- tx_hash (text)
-- status (text)
-- created_at (timestamp)
-```
-
-## Getting Started
+## Getting started
 
 ### Prerequisites
 - Node.js 18+
-- npm/yarn/pnpm/bun
-- Supabase account
-- Stellar testnet account (for testing)
+- bun, npm, or pnpm
+- Supabase project
+- Stellar testnet account (auto-funded via Friendbot)
+- Rust + `stellar-cli` *(only if you want to redeploy contracts)*
 
-### Installation
+### Setup
 
-1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/expo.git
-cd expo
-```
+# 1. Clone & install
+git clone https://github.com/Div1912/ExpoPay.git
+cd ExpoPay
+bun install        # or: npm install
 
-2. **Install dependencies**
-```bash
-npm install
-# or
-bun install
-```
-
-3. **Set up environment variables**
-```bash
+# 2. Configure env
 cp .env.example .env
-# Edit .env with your credentials
+$EDITOR .env
+
+# 3. Create the database schema
+#    Apply, in order, in the Supabase SQL editor:
+#      supabase_migration.sql
+#      supabase_split_migration.sql
+#      supabase_savings_migration.sql
+#    Then enable Realtime on `transactions`, `contracts`, `split_bills`,
+#    `staking_positions`, `pool_positions`.
+
+# 4. Run dev server
+bun run dev        # or: npm run dev
+# → http://localhost:3000
 ```
 
-4. **Set up Supabase**
-- Create a new Supabase project
-- Run the database migrations (see schema above)
-- Enable Realtime for `transactions` and `contracts` tables
-
-5. **Run the development server**
-```bash
-npm run dev
-```
-
-6. **Open the app**
-Navigate to [http://localhost:3000](http://localhost:3000)
-
-### Building the Escrow Contract
+### Building & deploying contracts (optional)
 
 ```bash
+# Each contract directory has its own Cargo.toml
 cd contracts/escrow
 cargo build --target wasm32-unknown-unknown --release
+
 stellar contract deploy \
   --wasm target/wasm32-unknown-unknown/release/escrow.wasm \
-  --source-account your_account \
+  --source-account YOUR_ACCOUNT \
   --network testnet
+# → returns the contract ID; paste into ESCROW_CONTRACT_ID
+
+# repeat for contracts/staking and contracts/pool, then call init() once
 ```
 
-## Usage
+There's also `scripts/deploy.ts` for batch deployment and `scripts/fund-rewards.ts` for topping up the staking and pool reward buckets.
 
-### Creating an Account
-1. Visit `/auth/signup`
-2. Enter your phone number or email
-3. Verify with OTP
-4. Choose your Universal ID (e.g., `alice`)
-5. A Stellar wallet is automatically created using Stellar SDK  and funded via friendbot
+---
 
-### Sending Money
-1. Go to Dashboard > Send
-2. Enter recipient's Universal ID (e.g., `bob@expo`)
-3. Enter amount and select currency
-4. Review the FX quote (if cross-currency)
-5. Enter your 4-digit PIN
-6. Transaction settles in ~3 seconds
+## Project structure
 
-### Creating an Escrow Contract
-1. Go to Dashboard > Contracts
-2. Click "Create Contract"
-3. Enter freelancer's Universal ID
-4. Set amount and deadline
-5. Funds are locked on-chain
-6. Freelancer marks delivered when complete
-7. You release funds to freelancer
+```
+ExpoPay/
+├── contracts/
+│   ├── escrow/      # Soroban escrow contract
+│   ├── staking/     # Fixed-term EXPO staking
+│   └── pool/        # XLM deposit pool with EXPO rewards
+├── scripts/
+│   ├── deploy.ts        # Bulk-deploy all contracts
+│   └── fund-rewards.ts  # Top up reward pools
+├── src/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── admin/{contracts,resolve}/   # Arbiter actions
+│   │   │   ├── contracts/{deliver,dispute,fund,refund,release}/
+│   │   │   ├── expo/{balance,check,check-phone,claim,pin,profile,resolve}/
+│   │   │   ├── fx/quote/
+│   │   │   ├── merchant/{history,pay,quote}/
+│   │   │   ├── payments/{history,send}/
+│   │   │   ├── savings/{positions,stake,unstake,pool/{deposit,withdraw}}/
+│   │   │   └── split/[id]/pay/
+│   │   ├── auth/                     # Login, signup, OTP, reset
+│   │   ├── dashboard/
+│   │   │   ├── admin/                # Arbiter console
+│   │   │   ├── contracts/            # Escrow UI
+│   │   │   ├── history/              # Tx history
+│   │   │   ├── merchant/             # Pay UPI
+│   │   │   ├── savings/              # Vault: staking + pool
+│   │   │   ├── scan/                 # QR scanner
+│   │   │   ├── send/                 # Send P2P
+│   │   │   ├── split/                # Split bills
+│   │   │   ├── receive/              # Show your QR
+│   │   │   ├── profile/  settings/
+│   │   │   └── page.tsx              # Overview
+│   │   ├── onboarding/
+│   │   └── page.tsx                  # Landing
+│   ├── components/
+│   │   ├── InactivityGuard.tsx       # Auto-logout w/ visibility-aware timers
+│   │   ├── Background.tsx  Logo.tsx  Navbar.tsx
+│   │   ├── PaymentNotification.tsx   # Realtime in-app alerts
+│   │   ├── sections/                 # Landing-page blocks
+│   │   └── ui/                       # Reusable primitives (Radix-based)
+│   ├── lib/
+│   │   ├── stellar.ts                # Stellar SDK wrapper
+│   │   ├── escrow.ts                 # Escrow + token transfer helpers
+│   │   ├── savings.ts                # Staking & pool client
+│   │   ├── fx-service.ts             # Live FX quotes
+│   │   ├── upi-service.ts            # UPI QR parsing
+│   │   ├── notify.ts                 # Resend email helpers
+│   │   ├── supabase.ts               # Browser + admin clients
+│   │   └── supabase-server.ts        # Server-side getUser()
+│   └── middleware.ts                 # Auth gate for /dashboard/* and /auth/*
+├── supabase_migration.sql
+├── supabase_split_migration.sql      # NEW
+├── supabase_savings_migration.sql    # NEW
+└── screenshots/                      # README assets
+```
 
-### Paying Indian Merchants
-1. Go to Dashboard > Pay Merchant
-2. Scan UPI QR or select demo merchant
-3. Enter INR amount
-4. Review XLM conversion rate
-5. Confirm with PIN
-6. Merchant receives INR via UPI
+---
 
-## Security Considerations
+## Security notes
 
-- **Private Keys**: Stored encrypted in Supabase. Consider moving to hardware security modules (HSM) for production.
-- **PIN Storage**: Currently plaintext. Should be hashed with bcrypt for production.
-- **Rate Limiting**: Implement rate limiting on all API routes.
-- **HTTPS**: Always use HTTPS in production.
-- **Audit**: Smart contracts should be audited before mainnet deployment.
+What's already in place:
+- Server-side `getUser()` on every API route; middleware also redirects unauthenticated browser navigations.
+- 4-digit transaction PIN required for sends, merchant payments, escrow refunds.
+- Inactivity guard with 15-min timeout, visibility-aware so it doesn't fire while the phone is backgrounded.
+- Service-role Supabase client refuses to start in production if `SUPABASE_SERVICE_ROLE_KEY` is missing.
+- All money-moving operations emit a Stellar transaction hash; nothing is "off-chain only".
+
+What's still on the hardening backlog (call out in any prod deploy):
+- **Encrypt `stellar_secret` at rest.** Currently plaintext in Postgres.
+- **Hash `app_pin`** with bcrypt + add lockout after N failed attempts.
+- **Rate-limit** auth, OTP, refund, admin-resolve endpoints.
+- **Promote admin/arbiter** out of the hardcoded `ADMIN_EMAILS` list into a `profiles.role` column.
+- **Smart-contract audit** before mainnet; current state is testnet-only.
+
+---
 
 ## Roadmap
 
-- [ ] Mainnet deployment
-- [ ] Hardware wallet integration (Ledger, Trezor)
+- [x] Universal IDs + P2P sends
+- [x] Soroban escrow (create/fund/deliver/release/dispute/refund)
+- [x] Indian UPI merchant bridge
+- [x] Split bills with on-chain settlement
+- [x] EXPO staking + XLM yield pool
+- [x] Compound projection UI
+- [ ] Auto-compound opt-in (on-chain auto-restake)
+- [ ] Stake streaks (consecutive completions → reward multiplier)
+- [ ] Anti-rugpull insurance vault
+- [ ] Mainnet deployment + smart-contract audit
+- [ ] Hardware-wallet signing (Ledger / Trezor)
 - [ ] Multi-signature escrow
-- [ ] Recurring payments
-- [ ] Invoice generation
-- [ ] Mobile apps (iOS, Android)
-- [ ] More fiat on/off ramps
-- [ ] DEX integration for swaps
+- [ ] Native iOS / Android apps
 
-## Contributing
-
-Contributions are welcome! Please read our contributing guidelines and submit PRs.
-
+---
 
 ## Links
 
 - [Stellar Documentation](https://developers.stellar.org/)
 - [Soroban Smart Contracts](https://soroban.stellar.org/)
-- [Supabase Documentation](https://supabase.com/docs)
-- [Next.js Documentation](https://nextjs.org/docs)
+- [Supabase Docs](https://supabase.com/docs)
+- [Next.js Docs](https://nextjs.org/docs)
 
 ---
 
-Built with love on the Stellar Network
+<div align="center">
+
+Built on the Stellar Network · MIT License
+
+</div>
