@@ -8,7 +8,7 @@
 
 ExpoPay turns wallet addresses into human-readable Universal IDs (`alice@expo`), settles payments in seconds via Stellar, lets Indian merchants receive INR via UPI, lets freelancers and clients lock milestone funds in a Soroban contract, splits group bills automatically, and provides an on-chain Vault for EXPO staking and daily XLM yield.
 
-[**Live demo →**](https://exporouter.site) &nbsp;·&nbsp; ![CI](https://github.com/Div1912/ExpoPay/actions/workflows/ci.yml/badge.svg)
+[**Live demo →**](https://exporouter.site) &nbsp;·&nbsp; ![CI](https://github.com/Div1912/ExpoPay/actions/workflows/ci.yml/badge.svg) &nbsp;·&nbsp; [![Latest Release](https://img.shields.io/github/v/release/Div1912/ExpoPay?label=release&color=blueviolet)](https://github.com/Div1912/ExpoPay/releases/latest)
 
 [**MVP Video →**](https://youtu.be/nHyg3oPxe0Q)
 
@@ -29,6 +29,7 @@ ExpoPay turns wallet addresses into human-readable Universal IDs (`alice@expo`),
 7. [Project structure](#project-structure)
 8. [Security notes](#security-notes)
 9. [Roadmap](#roadmap)
+10. [Release notes](#release-notes)
 
 ---
 
@@ -589,12 +590,23 @@ What's still on the hardening backlog (call out in any prod deploy):
 
 ---
 
+## Release notes
+
+All notable changes, version history, and published binaries are tracked on the **GitHub Releases** page:
+
+👉 **[View all releases →](https://github.com/Div1912/ExpoPay/releases)**
+
+You can also subscribe to new releases via GitHub's **Watch → Custom → Releases** option on the repository page to get notified whenever a new version ships.
+
+---
+
 ## Links
 
 - [Stellar Documentation](https://developers.stellar.org/)
 - [Soroban Smart Contracts](https://soroban.stellar.org/)
 - [Supabase Docs](https://supabase.com/docs)
 - [Next.js Docs](https://nextjs.org/docs)
+- [Release notes](https://github.com/Div1912/ExpoPay/releases)
 
 ---
 
