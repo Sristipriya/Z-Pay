@@ -12,9 +12,9 @@ ExpoPay turns wallet addresses into human-readable Universal IDs (`alice@expo`),
 
 [**Latest Release →**](https://github.com/Div1912/ExpoPay/releases/latest) ![V1.0.0](https://img.shields.io/github/v/release/Div1912/ExpoPay?label=release&color=blueviolet)
 
-[**MVP Video **](https://youtu.be/nHyg3oPxe0Q)
+[**MVP Video →**](https://youtu.be/nHyg3oPxe0Q)
 
-[**User feedbacks **](https://docs.google.com/spreadsheets/d/e/2PACX-1vR82azl8byhjpi6hAnn8naPIsU5H-I_TGDyDFqdP2jv7xJXpp5O1MSdHBfHmFYH0v7Bka2FSSyrEbS2/pubhtml)
+[**User feedbacks →**](https://docs.google.com/spreadsheets/d/e/2PACX-1vR82azl8byhjpi6hAnn8naPIsU5H-I_TGDyDFqdP2jv7xJXpp5O1MSdHBfHmFYH0v7Bka2FSSyrEbS2/pubhtml)
 
 </div>
 
