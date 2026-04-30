@@ -32,31 +32,38 @@ function SparkLine({ data, color, height = 40 }: { data: number[]; color: string
   );
 }
 
+const BAR_HEIGHT_PX = 80;
+
 function InteractiveBarChart({ data, color, label }: { data: { date: string; value: number }[]; color: string; label: string }) {
   const [hovered, setHovered] = useState<number | null>(null);
   const max = Math.max(...data.map(d => d.value), 1);
   return (
     <div className="space-y-2">
-      <div className="flex items-end gap-1 h-20 group">
-        {data.map((d, i) => (
-          <div key={d.date} className="relative flex-1 flex flex-col justify-end cursor-pointer"
-            onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}>
-            {hovered === i && (
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-20 bg-black/90 border border-white/20 rounded-lg px-2 py-1 text-[9px] font-bold whitespace-nowrap pointer-events-none">
-                <span className="text-white/60">{d.date.slice(5)} </span>
-                <span style={{ color }}>{d.value} {label}</span>
-              </div>
-            )}
-            <motion.div
-              initial={{ height: 0 }} animate={{ height: `${Math.max((d.value / max) * 100, d.value > 0 ? 6 : 2)}%` }}
-              transition={{ delay: i * 0.02, duration: 0.5 }}
-              className="w-full rounded-t-sm transition-opacity"
-              style={{ background: `linear-gradient(to top, ${color}, ${color}88)`, opacity: hovered === i ? 1 : 0.65 }}
-            />
-          </div>
-        ))}
+      <div className="relative flex items-end gap-[3px]" style={{ height: BAR_HEIGHT_PX }}>
+        {data.map((d, i) => {
+          const barH = d.value > 0 ? Math.max((d.value / max) * (BAR_HEIGHT_PX - 4), 6) : 2;
+          return (
+            <div key={d.date} className="relative flex-1 flex flex-col justify-end cursor-pointer h-full"
+              onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}>
+              {hovered === i && (
+                <div className="absolute z-20 bg-black/90 border border-white/20 rounded-lg px-2 py-1 text-[9px] font-bold whitespace-nowrap pointer-events-none"
+                  style={{ bottom: barH + 6, left: "50%", transform: "translateX(-50%)" }}>
+                  <span className="text-white/60">{d.date.slice(5)} · </span>
+                  <span style={{ color }}>{d.value} {label}</span>
+                </div>
+              )}
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: barH }}
+                transition={{ delay: i * 0.025, duration: 0.5, ease: "easeOut" }}
+                className="w-full rounded-t-sm"
+                style={{ background: `linear-gradient(to top, ${color}cc, ${color}55)`, opacity: hovered === i ? 1 : 0.7 }}
+              />
+            </div>
+          );
+        })}
       </div>
-      <div className="flex justify-between text-[8px] text-white/20 font-bold px-0.5">
+      <div className="flex justify-between text-[8px] text-white/20 font-bold">
         {data.filter((_, i) => i % Math.ceil(data.length / 5) === 0).map(d => (
           <span key={d.date}>{d.date.slice(5)}</span>
         ))}
@@ -193,19 +200,25 @@ export default function MetricsDashboard() {
                 </div>
 
                 {/* Value */}
-                <div className="flex items-end justify-between gap-2">
-                  <div>
-                    <p className="text-3xl font-bold text-white tabular-nums leading-none">
-                      {kpi.unit === "XLM" ? kpi.value.toLocaleString() : kpi.value.toLocaleString()}
-                      {(kpi.unit === "%" ) && <span className="text-xl text-white/50">%</span>}
-                      {kpi.unit === "XLM" && <span className="text-sm text-white/40 ml-1 font-medium">XLM</span>}
-                    </p>
-                    <p className="text-[10px] text-white/30 font-medium mt-1">{kpi.sub}</p>
+                <div className="flex items-end justify-between gap-2 min-w-0">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-1 flex-wrap">
+                      <p className="text-2xl font-bold text-white tabular-nums leading-none truncate">
+                        {kpi.unit === "XLM"
+                          ? kpi.value >= 1000
+                            ? `${(kpi.value / 1000).toFixed(1)}K`
+                            : kpi.value.toLocaleString()
+                          : kpi.value.toLocaleString()}
+                      </p>
+                      {kpi.unit === "%" && <span className="text-lg text-white/50 font-bold">%</span>}
+                      {kpi.unit === "XLM" && <span className="text-xs text-white/40 font-semibold">XLM</span>}
+                    </div>
+                    <p className="text-[10px] text-white/30 font-medium mt-1 truncate">{kpi.sub}</p>
                   </div>
                   {/* Ring */}
                   <div className="relative shrink-0">
-                    <RingMini pct={kpi.pct} color={kpi.color} size={48} />
-                    <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold rotate-0"
+                    <RingMini pct={kpi.pct} color={kpi.color} size={44} />
+                    <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold"
                       style={{ color: kpi.color }}>{kpi.pct}%</span>
                   </div>
                 </div>
