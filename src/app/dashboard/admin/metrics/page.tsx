@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { Users, TrendingUp, Activity, Zap, RefreshCw, Loader2, ArrowUpRight, ArrowDownRight, Shield, BarChart2, Calendar, Star } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Users, TrendingUp, Activity, Zap, RefreshCw, Loader2, ArrowUpRight, Shield, BarChart2, Calendar, ChevronDown, Radio } from "lucide-react";
 
 interface MetricsSummary {
   total_users: number; active_users_30d: number; active_users_7d: number;
@@ -12,72 +12,83 @@ interface DailyStat { date: string; transactions: number; volume: number; dau: n
 interface TopUser { universal_id: string; tx_count: number; }
 interface RecentSignup { universal_id: string; full_name: string; created_at: string; preferred_currency: string; }
 
-function AnimatedNumber({ value, decimals = 0 }: { value: number; decimals?: number }) {
-  const [display, setDisplay] = useState(0);
-  useEffect(() => {
-    const controls = animate(0, value, { duration: 1.2, ease: "easeOut", onUpdate: v => setDisplay(v) });
-    return controls.stop;
-  }, [value]);
-  return <>{display.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}</>;
-}
-
-function Card3D({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(0); const y = useMotionValue(0);
-  const rotateX = useTransform(y, [-50, 50], [6, -6]);
-  const rotateY = useTransform(x, [-50, 50], [-6, 6]);
-  const handleMove = (e: React.MouseEvent) => {
-    const r = ref.current?.getBoundingClientRect();
-    if (!r) return;
-    x.set(e.clientX - r.left - r.width / 2);
-    y.set(e.clientY - r.top - r.height / 2);
-  };
+function SparkLine({ data, color, height = 40 }: { data: number[]; color: string; height?: number }) {
+  const max = Math.max(...data, 1);
+  const w = 200; const h = height;
+  if (data.length < 2) return null;
+  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - (v / max) * (h - 4) - 2}`).join(" ");
+  const area = `0,${h} ${pts} ${w},${h}`;
   return (
-    <motion.div ref={ref} onMouseMove={handleMove} onMouseLeave={() => { x.set(0); y.set(0); }}
-      style={{ rotateX, rotateY, transformStyle: "preserve-3d", perspective: 800 }}
-      whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}
-      className={className}>{children}</motion.div>
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height }}>
+      <defs>
+        <linearGradient id={`sg-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={area} fill={`url(#sg-${color.replace("#","")})`} />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
-function RingChart({ pct, color, size = 80, label }: { pct: number; color: string; size?: number; label: string }) {
-  const r = size / 2 - 8; const c = 2 * Math.PI * r;
+function InteractiveBarChart({ data, color, label }: { data: { date: string; value: number }[]; color: string; label: string }) {
+  const [hovered, setHovered] = useState<number | null>(null);
+  const max = Math.max(...data.map(d => d.value), 1);
   return (
-    <div className="flex flex-col items-center gap-2">
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6"/>
-        <motion.circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth="6"
-          strokeLinecap="round" strokeDasharray={c}
-          initial={{ strokeDashoffset: c }}
-          animate={{ strokeDashoffset: c - (pct / 100) * c }}
-          transition={{ duration: 1.2, ease: "easeOut" }}/>
-        <text x={size/2} y={size/2+1} textAnchor="middle" dominantBaseline="middle"
-          className="rotate-90" style={{ rotate:"90deg", transformOrigin:"center", fontSize:13, fontWeight:700, fill:"white", transform:`rotate(90deg) translateX(0)` }}>
-        </text>
-      </svg>
-      <div className="text-center">
-        <div className="text-lg font-black" style={{color}}>{pct}%</div>
-        <div className="text-[9px] text-white/40 uppercase tracking-wider font-bold">{label}</div>
+    <div className="space-y-2">
+      <div className="flex items-end gap-1 h-20 group">
+        {data.map((d, i) => (
+          <div key={d.date} className="relative flex-1 flex flex-col justify-end cursor-pointer"
+            onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}>
+            {hovered === i && (
+              <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-20 bg-black/90 border border-white/20 rounded-lg px-2 py-1 text-[9px] font-bold whitespace-nowrap pointer-events-none">
+                <span className="text-white/60">{d.date.slice(5)} </span>
+                <span style={{ color }}>{d.value} {label}</span>
+              </div>
+            )}
+            <motion.div
+              initial={{ height: 0 }} animate={{ height: `${Math.max((d.value / max) * 100, d.value > 0 ? 6 : 2)}%` }}
+              transition={{ delay: i * 0.02, duration: 0.5 }}
+              className="w-full rounded-t-sm transition-opacity"
+              style={{ background: `linear-gradient(to top, ${color}, ${color}88)`, opacity: hovered === i ? 1 : 0.65 }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-between text-[8px] text-white/20 font-bold px-0.5">
+        {data.filter((_, i) => i % Math.ceil(data.length / 5) === 0).map(d => (
+          <span key={d.date}>{d.date.slice(5)}</span>
+        ))}
       </div>
     </div>
   );
 }
 
-function MiniBar({ values, color, maxVal }: { values: number[]; color: string; maxVal: number }) {
+function RingMini({ pct, color, size = 60 }: { pct: number; color: string; size?: number }) {
+  const r = size / 2 - 5; const c = 2 * Math.PI * r;
   return (
-    <div className="flex items-end gap-[3px] h-16">
-      {values.map((v, i) => (
-        <motion.div key={i} className="flex-1 rounded-sm"
-          style={{ background: color, opacity: 0.3 + (v / maxVal) * 0.7, minHeight: 2 }}
-          initial={{ height: 0 }} animate={{ height: `${Math.max((v / maxVal) * 100, 4)}%` }}
-          transition={{ delay: i * 0.03, duration: 0.5 }}/>
-      ))}
-    </div>
+    <svg width={size} height={size} className="-rotate-90" style={{ flexShrink: 0 }}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
+      <motion.circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth="5"
+        strokeLinecap="round" strokeDasharray={c}
+        initial={{ strokeDashoffset: c }}
+        animate={{ strokeDashoffset: c - (Math.min(pct,100) / 100) * c }}
+        transition={{ duration: 1.2, ease: "easeOut" }} />
+    </svg>
   );
 }
 
-const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const HOURS = [0,3,6,9,12,15,18,21];
+const CARD_DETAILS: Record<string, { description: string; tips: string[] }> = {
+  "Total Users":    { description: "Unique accounts that have claimed a @expo Universal ID and activated a Stellar wallet.", tips: ["Share your referral link to grow faster", "Each user gets a Stellar testnet wallet on signup", "Target: 30+ for Black Belt"] },
+  "DAU (7d avg)":   { description: "Distinct users active in the last 7 days — includes signups and payment senders.", tips: ["Send payment campaigns to drive DAU", "Each new signup counts as a DAU event", "Goal: >10 DAU consistently"] },
+  "Txns (30d)":     { description: "Total P2P and merchant payment transactions processed in the last 30 days.", tips: ["Encourage split bills to multiply tx count", "Merchant payments count separately", "Each gasless tx also counts here"] },
+  "Volume (30d)":   { description: "Total XLM value settled on Stellar in the last 30 days across all payment types.", tips: ["Volume grows with higher-value payments", "Merchant UPI bridge boosts XLM usage", "Staking deposits are tracked separately"] },
+  "Retention":      { description: "% of users from earlier cohorts who remained active — measures platform stickiness.", tips: ["Send email reminders to inactive users", "Vault staking increases retention naturally", "Escrow contracts keep users engaged"] },
+  "Gasless Txs ⚡": { description: "Payments where ExpoPay sponsored the XLM network fee via fee_bump_transaction.", tips: ["Enable the ⚡ toggle on the Send page", "Platform wallet must have XLM balance", "Sponsor address shows as fee_source on-chain"] },
+  "All-time Txns":  { description: "Total lifetime transactions ever recorded on this platform across all users.", tips: ["Historical record — never decreases", "Includes failed/voided transactions too", "Exportable for audit purposes"] },
+  "Security Score": { description: "Security checklist completion: 8 of 13 production security controls implemented.", tips: ["Hash app_pin with bcrypt before mainnet", "Add rate limiting to auth endpoints", "Encrypt stellar_secret at rest"] },
+};
 
 export default function MetricsDashboard() {
   const [summary, setSummary] = useState<MetricsSummary | null>(null);
@@ -86,309 +97,291 @@ export default function MetricsDashboard() {
   const [signups, setSignups] = useState<RecentSignup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState<"dau"|"volume"|"txns">("dau");
-  const [selectedKpi, setSelectedKpi] = useState<number|null>(null);
+  const [chartTab, setChartTab] = useState<"dau"|"volume"|"txns">("dau");
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [refreshed, setRefreshed] = useState(new Date());
 
-  const fetch_ = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
       const r = await fetch("/api/admin/metrics");
       if (r.status === 403) { setError("Admin access only"); return; }
       const d = await r.json();
-      setSummary(d.summary); setDaily(d.daily_stats); setTopUsers(d.top_users); setSignups(d.recent_signups);
+      setSummary(d.summary); setDaily(d.daily_stats);
+      setTopUsers(d.top_users); setSignups(d.recent_signups);
       setRefreshed(new Date());
-    } catch(e:any) { setError(e.message); } finally { setLoading(false); }
+    } catch (e: any) { setError(e.message); } finally { setLoading(false); }
   };
-  useEffect(() => { fetch_(); }, []);
+  useEffect(() => { fetchData(); }, []);
 
   if (loading && !summary) return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] gap-4">
-      <div className="relative w-16 h-16">
-        <div className="absolute inset-0 rounded-full border-2 border-[#C694F9]/20 animate-ping"/>
-        <div className="absolute inset-2 rounded-full border-2 border-[#C694F9]/40 animate-ping" style={{animationDelay:"0.3s"}}/>
-        <Loader2 className="absolute inset-4 w-8 h-8 text-[#C694F9] animate-spin"/>
+      <div className="relative w-14 h-14">
+        <div className="absolute inset-0 rounded-full border-2 border-[#C694F9]/20 animate-ping" />
+        <Loader2 className="absolute inset-3 w-8 h-8 text-[#C694F9] animate-spin" />
       </div>
-      <p className="text-white/40 text-xs font-black uppercase tracking-widest">Crunching Analytics…</p>
+      <p className="text-white/40 text-[11px] font-semibold uppercase tracking-widest">Loading Analytics…</p>
     </div>
   );
   if (error) return <div className="flex items-center justify-center min-h-[60vh] text-red-400 font-bold">{error}</div>;
 
   const last14 = daily.slice(-14);
-  const last7 = daily.slice(-7);
-  const chartData = tab === "dau" ? last14.map(d=>d.dau) : tab === "volume" ? last14.map(d=>d.volume) : last14.map(d=>d.transactions);
-  const chartMax = Math.max(...chartData, 1);
-  const chartColor = tab === "dau" ? "#C694F9" : tab === "volume" ? "#facc15" : "#4ade80";
-
-  // Fake heatmap (7 days × 8 hour slots)
-  const heatmap = Array.from({length:7}, (_,d) => Array.from({length:8}, (_,h) => {
-    const base = last7[d]?.transactions || 0;
-    return Math.round(base * (0.05 + Math.random() * 0.25));
-  }));
-  const heatMax = Math.max(...heatmap.flat(), 1);
+  const chartValues = last14.map(d => chartTab === "dau" ? d.dau : chartTab === "volume" ? d.volume : d.transactions);
+  const chartColor = chartTab === "dau" ? "#C694F9" : chartTab === "volume" ? "#facc15" : "#4ade80";
 
   const kpis = summary ? [
-    { label:"Total Users", value: summary.total_users, icon: Users, color:"#C694F9", bg:"from-purple-600/20 to-purple-900/10",
-      delta: summary.active_users_7d, deltaLabel:"active 7d", sub: `${summary.active_users_30d} active 30d` },
-    { label:"DAU (7d avg)", value: summary.active_users_7d, icon: Activity, color:"#94A1F9", bg:"from-indigo-600/20 to-indigo-900/10",
-      delta: summary.active_users_30d, deltaLabel:"active 30d", sub: `${Math.round(summary.retention_rate)}% retention` },
-    { label:"Txns (30d)", value: summary.transactions_30d, icon: TrendingUp, color:"#4ade80", bg:"from-green-600/20 to-green-900/10",
-      delta: summary.transactions_7d, deltaLabel:"this week", sub: `${summary.total_transactions} all time` },
-    { label:"Volume (30d)", value: summary.volume_30d, icon: BarChart2, color:"#facc15", bg:"from-yellow-600/20 to-yellow-900/10",
-      delta: null, deltaLabel:"XLM settled", sub:"Total settled on Stellar" },
-    { label:"Retention", value: summary.retention_rate, icon: Calendar, color:"#f87171", bg:"from-red-600/20 to-red-900/10",
-      delta: null, deltaLabel:"WoW", sub:"Week-over-week cohort" },
-    { label:"Gasless Txs ⚡", value: summary.gasless_transactions, icon: Zap, color:"#a78bfa", bg:"from-violet-600/20 to-violet-900/10",
-      delta: null, deltaLabel:"sponsored", sub:"Fees paid by platform" },
-    { label:"All-time Txns", value: summary.total_transactions, icon: ArrowUpRight, color:"#60a5fa", bg:"from-blue-600/20 to-blue-900/10",
-      delta: null, deltaLabel:"lifetime", sub:"On Stellar testnet" },
-    { label:"Security Score", value: 62, icon: Shield, color:"#34d399", bg:"from-emerald-600/20 to-emerald-900/10",
-      delta: null, deltaLabel:"%", sub:"10/13 checks passed" },
+    { key: "Total Users",    value: summary.total_users,           icon: Users,      color: "#C694F9", pct: Math.min(100, Math.round((summary.total_users / 30) * 100)), sparkData: daily.slice(-14).map(d => d.dau), unit: "users",   sub: `${summary.active_users_30d} active 30d` },
+    { key: "DAU (7d avg)",   value: summary.active_users_7d,       icon: Activity,   color: "#94A1F9", pct: Math.min(100, Math.round((summary.active_users_7d / Math.max(summary.total_users,1)) * 100)), sparkData: daily.slice(-14).map(d => d.dau), unit: "users", sub: `${Math.round(summary.retention_rate)}% retention` },
+    { key: "Txns (30d)",     value: summary.transactions_30d,      icon: TrendingUp, color: "#4ade80", pct: Math.min(100, Math.round((summary.transactions_30d / Math.max(summary.total_transactions,1)) * 100)), sparkData: daily.slice(-14).map(d => d.transactions), unit: "txns", sub: `${summary.transactions_7d} this week` },
+    { key: "Volume (30d)",   value: summary.volume_30d,            icon: BarChart2,  color: "#facc15", pct: 100, sparkData: daily.slice(-14).map(d => d.volume), unit: "XLM", sub: "Stellar testnet" },
+    { key: "Retention",      value: summary.retention_rate,        icon: Calendar,   color: "#f87171", pct: summary.retention_rate, sparkData: [], unit: "%", sub: "Platform stickiness" },
+    { key: "Gasless Txs ⚡", value: summary.gasless_transactions,  icon: Zap,        color: "#a78bfa", pct: Math.min(100, Math.round((summary.gasless_transactions / Math.max(summary.transactions_30d,1)) * 100)), sparkData: [], unit: "txns", sub: "Fee sponsored" },
+    { key: "All-time Txns",  value: summary.total_transactions,    icon: ArrowUpRight,color:"#60a5fa", pct: 100, sparkData: daily.slice(-14).map(d => d.transactions), unit: "txns", sub: "Lifetime record" },
+    { key: "Security Score", value: 62,                            icon: Shield,     color: "#34d399", pct: 62, sparkData: [], unit: "%", sub: "10/13 checks passed" },
   ] : [];
 
   return (
-    <div className="space-y-8 pb-24" style={{fontFamily:"var(--font-syne, sans-serif)"}}>
+    <div className="space-y-7 pb-24" style={{ fontFamily: "var(--font-inter, system-ui, sans-serif)" }}>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <div className="w-2 h-8 rounded-full bg-gradient-to-b from-[#C694F9] to-[#94A1F9]"/>
-            <h1 className="text-4xl font-black uppercase tracking-tight">Analytics</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Analytics Dashboard</h1>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/20">
+              <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ repeat: Infinity, duration: 2 }}
+                className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              <Radio className="w-3 h-3 text-green-400" />
+              <span className="text-[10px] font-semibold text-green-400">LIVE</span>
+            </div>
           </div>
-          <p className="text-white/30 text-xs font-bold uppercase tracking-widest ml-5">
-            ExpoPay Platform · {refreshed.toLocaleTimeString()}
-          </p>
+          <p className="text-white/30 text-xs font-medium">Updated {refreshed.toLocaleTimeString()} · ExpoPay Platform</p>
         </div>
-        <button onClick={fetch_} disabled={loading}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm uppercase tracking-wider bg-gradient-to-r from-[#C694F9]/20 to-[#94A1F9]/20 border border-[#C694F9]/30 hover:from-[#C694F9]/30 hover:to-[#94A1F9]/30 transition-all disabled:opacity-50">
-          <RefreshCw className={`w-4 h-4 ${loading?"animate-spin":""}`}/>
-          Refresh
+        <button onClick={fetchData} disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all disabled:opacity-50 text-white/70 hover:text-white">
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          Refresh Data
         </button>
       </div>
 
-      {/* KPI 3D Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {kpis.map((kpi, i) => (
-          <Card3D key={kpi.label}
-            className={`bg-gradient-to-br ${kpi.bg} border rounded-2xl cursor-pointer transition-all ${selectedKpi===i ? "border-[#C694F9]/50 ring-2 ring-[#C694F9]/20" : "border-white/[0.07] hover:border-white/20"}`}
-            onClick={() => setSelectedKpi(selectedKpi===i?null:i)}>
-            <div className="p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">{kpi.label}</p>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:`${kpi.color}18`, border:`1px solid ${kpi.color}30`}}>
-                  <kpi.icon className="w-3.5 h-3.5" style={{color:kpi.color}}/>
+      {/* 8 KPI Cards — all collapsible */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+        {kpis.map((kpi) => {
+          const isOpen = expanded === kpi.key;
+          const detail = CARD_DETAILS[kpi.key];
+          const barData = daily.slice(-14).map(d => ({
+            date: d.date,
+            value: kpi.key === "Volume (30d)" ? d.volume : kpi.key.includes("Txns") || kpi.key === "All-time Txns" ? d.transactions : d.dau
+          }));
+          return (
+            <motion.div key={kpi.key} layout
+              className="rounded-2xl border border-white/[0.07] bg-white/[0.03] overflow-hidden cursor-pointer hover:border-white/15 transition-all"
+              onClick={() => setExpanded(isOpen ? null : kpi.key)}>
+              {/* Card Header */}
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: `${kpi.color}15`, border: `1px solid ${kpi.color}30` }}>
+                      <kpi.icon className="w-4 h-4" style={{ color: kpi.color }} />
+                    </div>
+                    <p className="text-[11px] font-semibold text-white/50 leading-tight">{kpi.key}</p>
+                  </div>
+                  <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                    <ChevronDown className="w-4 h-4 text-white/30 shrink-0" />
+                  </motion.div>
                 </div>
-              </div>
-              <motion.p className="text-2xl font-black tabular-nums" initial={{opacity:0}} animate={{opacity:1}}>
-                {kpi.label==="Volume (30d)" ? <><AnimatedNumber value={kpi.value} decimals={0}/> <span className="text-sm text-white/40">XLM</span></>
-                  : kpi.label==="Retention" || kpi.label==="Security Score" ? <><AnimatedNumber value={kpi.value}/><span className="text-lg text-white/40">%</span></>
-                  : <AnimatedNumber value={kpi.value}/>}
-              </motion.p>
-              {kpi.delta !== null && (
-                <div className="flex items-center gap-1">
-                  <ArrowUpRight className="w-3 h-3 text-green-400"/>
-                  <span className="text-[10px] font-bold text-green-400">{kpi.delta.toLocaleString()}</span>
-                  <span className="text-[10px] text-white/30">{kpi.deltaLabel}</span>
-                </div>
-              )}
-              <div className="h-px bg-white/5"/>
-              <p className="text-[9px] text-white/30 font-bold">{kpi.sub}</p>
 
-              {/* Expanded detail panel */}
-              {selectedKpi===i && (
-                <motion.div initial={{opacity:0,height:0}} animate={{opacity:1,height:"auto"}}
-                  className="pt-2 border-t border-white/10 space-y-1">
-                  <p className="text-[9px] text-white/50 font-bold uppercase tracking-wider">7-day trend</p>
-                  <MiniBar values={last7.map(d=>tab==="volume"?d.volume:tab==="txns"?d.transactions:d.dau)}
-                    color={kpi.color} maxVal={Math.max(...last7.map(d=>d.dau),1)}/>
-                </motion.div>
-              )}
-            </div>
-          </Card3D>
-        ))}
+                {/* Value */}
+                <div className="flex items-end justify-between gap-2">
+                  <div>
+                    <p className="text-3xl font-bold text-white tabular-nums leading-none">
+                      {kpi.unit === "XLM" ? kpi.value.toLocaleString() : kpi.value.toLocaleString()}
+                      {(kpi.unit === "%" ) && <span className="text-xl text-white/50">%</span>}
+                      {kpi.unit === "XLM" && <span className="text-sm text-white/40 ml-1 font-medium">XLM</span>}
+                    </p>
+                    <p className="text-[10px] text-white/30 font-medium mt-1">{kpi.sub}</p>
+                  </div>
+                  {/* Ring */}
+                  <div className="relative shrink-0">
+                    <RingMini pct={kpi.pct} color={kpi.color} size={48} />
+                    <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold rotate-0"
+                      style={{ color: kpi.color }}>{kpi.pct}%</span>
+                  </div>
+                </div>
+
+                {/* Sparkline */}
+                {kpi.sparkData.length > 1 && (
+                  <div className="mt-3 opacity-60">
+                    <SparkLine data={kpi.sparkData} color={kpi.color} height={30} />
+                  </div>
+                )}
+              </div>
+
+              {/* Expanded Detail Panel */}
+              <AnimatePresence>
+                {isOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden"
+                    onClick={e => e.stopPropagation()}>
+                    <div className="px-4 pb-4 space-y-4 border-t border-white/[0.07] pt-4">
+                      <p className="text-[11px] text-white/50 leading-relaxed">{detail.description}</p>
+
+                      {/* Bar chart for data-backed metrics */}
+                      {barData.some(d => d.value > 0) && (
+                        <div>
+                          <p className="text-[9px] font-semibold text-white/30 uppercase tracking-widest mb-2">14-Day Trend</p>
+                          <InteractiveBarChart data={barData} color={kpi.color}
+                            label={kpi.unit === "XLM" ? "XLM" : kpi.unit === "%" ? "%" : kpi.key.toLowerCase().includes("user") ? "users" : "txns"} />
+                        </div>
+                      )}
+
+                      {/* Retention breakdown */}
+                      {kpi.key === "Retention" && summary && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { l: "30d Active", v: summary.active_users_30d, c: "#C694F9" },
+                            { l: "7d Active",  v: summary.active_users_7d,  c: "#4ade80" },
+                            { l: "Total Users",v: summary.total_users,      c: "#facc15" },
+                            { l: "Rate",       v: `${summary.retention_rate}%`, c: "#f87171" },
+                          ].map(s => (
+                            <div key={s.l} className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+                              <p className="text-[8px] text-white/30 uppercase tracking-wider">{s.l}</p>
+                              <p className="text-sm font-bold mt-0.5" style={{color:s.c}}>{s.v}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Security breakdown */}
+                      {kpi.key === "Security Score" && (
+                        <div className="space-y-1.5">
+                          {[
+                            { l: "Server-side auth",      done: true },
+                            { l: "Transaction PIN",       done: true },
+                            { l: "Inactivity guard",      done: true },
+                            { l: "On-chain audit trail",  done: true },
+                            { l: "Structured logging",    done: true },
+                            { l: "Fee-bump privacy",      done: true },
+                            { l: "Duplicate tx check",    done: true },
+                            { l: "Service key guard",     done: true },
+                            { l: "PIN hashing (bcrypt)",  done: false },
+                            { l: "Secret encryption",     done: false },
+                            { l: "Rate limiting",         done: false },
+                            { l: "DB role RBAC",          done: false },
+                            { l: "Contract audit",        done: false },
+                          ].map(c => (
+                            <div key={c.l} className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full shrink-0 ${c.done ? "bg-green-500" : "bg-white/10"}`} />
+                              <span className={`text-[10px] font-medium ${c.done ? "text-white/70" : "text-white/25 line-through"}`}>{c.l}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Tips */}
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-semibold text-white/25 uppercase tracking-widest">Tips</p>
+                        {detail.tips.map(t => (
+                          <div key={t} className="flex items-start gap-1.5">
+                            <div className="w-1 h-1 rounded-full mt-1.5 shrink-0" style={{background:kpi.color}}/>
+                            <p className="text-[10px] text-white/40">{t}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          );
+        })}
       </div>
 
-      {/* Main Chart */}
+      {/* Main Interactive Chart */}
       <div className="bg-white/[0.02] border border-white/[0.07] rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between p-6 pb-4 border-b border-white/[0.05]">
-          <h2 className="text-sm font-black uppercase tracking-[0.15em] text-white/60">Trend Analysis · Last 14 Days</h2>
-          <div className="flex gap-1">
-            {(["dau","volume","txns"] as const).map(t => (
-              <button key={t} onClick={()=>setTab(t)}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
-                  tab===t ? "bg-[#C694F9]/20 border border-[#C694F9]/40 text-[#C694F9]"
-                          : "bg-white/5 border border-white/10 text-white/40 hover:text-white"}`}>
-                {t==="dau"?"Users":t==="volume"?"Volume":"Txns"}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 pb-4 border-b border-white/[0.05]">
+          <div>
+            <h2 className="text-sm font-bold text-white">Platform Trends</h2>
+            <p className="text-[11px] text-white/30 font-medium mt-0.5">Last 14 days — hover bars for details</p>
+          </div>
+          <div className="flex gap-1.5">
+            {(["dau","txns","volume"] as const).map(t => (
+              <button key={t} onClick={() => setChartTab(t)}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                  chartTab === t
+                    ? "text-white border" : "bg-white/[0.03] border border-white/[0.07] text-white/40 hover:text-white/70"}`}
+                style={chartTab === t ? { background: `${chartColor}18`, borderColor: `${chartColor}40`, color: chartColor } : {}}>
+                {t === "dau" ? "Users" : t === "volume" ? "Volume" : "Transactions"}
               </button>
             ))}
           </div>
         </div>
-        <div className="p-6">
-          {/* Area-style chart */}
-          <div className="relative h-40">
-            <svg className="absolute inset-0 w-full h-full" viewBox={`0 0 ${last14.length*40} 120`} preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={chartColor} stopOpacity="0.4"/>
-                  <stop offset="100%" stopColor={chartColor} stopOpacity="0"/>
-                </linearGradient>
-              </defs>
-              {chartData.length > 1 && (() => {
-                const pts = chartData.map((v,i) => `${i*40+20},${120-(v/chartMax)*100}`).join(" ");
-                const area = `${20},120 ${pts} ${(chartData.length-1)*40+20},120`;
-                return (<>
-                  <motion.polygon points={area} fill="url(#chartGrad)" initial={{opacity:0}} animate={{opacity:1}} transition={{duration:0.8}}/>
-                  <motion.polyline points={pts} fill="none" stroke={chartColor} strokeWidth="2" strokeLinecap="round"
-                    initial={{pathLength:0}} animate={{pathLength:1}} transition={{duration:1.2}}/>
-                  {chartData.map((v,i) => (
-                    <motion.circle key={i} cx={i*40+20} cy={120-(v/chartMax)*100} r="3" fill={chartColor}
-                      initial={{r:0}} animate={{r:3}} transition={{delay:0.8+i*0.05}}>
-                      <title>{last14[i]?.date.slice(5)}: {v}</title>
-                    </motion.circle>
-                  ))}
-                </>);
-              })()}
-            </svg>
-          </div>
-          {/* X-axis labels */}
-          <div className="flex justify-between mt-2 px-2">
-            {last14.filter((_,i)=>i%3===0).map(d=>(
-              <span key={d.date} className="text-[9px] text-white/20 font-bold">{d.date.slice(5)}</span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom grid: Heatmap + Ring Charts + Tables */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-
-        {/* Activity Heatmap */}
-        <div className="xl:col-span-2 bg-white/[0.02] border border-white/[0.07] rounded-2xl p-6">
-          <h3 className="text-sm font-black uppercase tracking-[0.15em] text-white/60 mb-4">Transaction Heatmap · Last 7 Days</h3>
-          <div className="space-y-2">
-            <div className="flex gap-1 mb-1">
-              <div className="w-8"/>
-              {HOURS.map(h=><div key={h} className="flex-1 text-center text-[8px] text-white/20 font-bold">{h}h</div>)}
-            </div>
-            {heatmap.map((row, d) => (
-              <div key={d} className="flex items-center gap-1">
-                <div className="w-8 text-[8px] text-white/30 font-bold">{DAYS[d]}</div>
-                {row.map((v, h) => {
-                  const intensity = v / heatMax;
-                  return (
-                    <motion.div key={h} className="flex-1 h-6 rounded-sm cursor-pointer group relative"
-                      style={{ background: `rgba(198,148,249,${0.05 + intensity * 0.85})` }}
-                      whileHover={{ scale: 1.2 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                      transition={{ delay: (d * 8 + h) * 0.005 }}>
-                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black/90 border border-white/10 rounded px-1.5 py-0.5 text-[9px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 z-10 pointer-events-none">
-                        {v} txns
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            ))}
-            <div className="flex items-center gap-2 mt-3 justify-end">
-              <span className="text-[9px] text-white/20">Low</span>
-              <div className="flex gap-1">
-                {[0.1,0.3,0.5,0.7,0.9].map(o=>(
-                  <div key={o} className="w-4 h-3 rounded-sm" style={{background:`rgba(198,148,249,${o})`}}/>
-                ))}
-              </div>
-              <span className="text-[9px] text-white/20">High</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Ring Charts */}
-        <div className="bg-white/[0.02] border border-white/[0.07] rounded-2xl p-6 flex flex-col gap-4">
-          <h3 className="text-sm font-black uppercase tracking-[0.15em] text-white/60">Key Rates</h3>
-          <div className="flex flex-col gap-6 items-center justify-center flex-1">
-            {summary && <>
-              <RingChart pct={summary.retention_rate} color="#C694F9" label="Retention WoW" size={90}/>
-              <RingChart pct={Math.min(100,Math.round((summary.active_users_30d/Math.max(summary.total_users,1))*100))} color="#4ade80" label="Active Users" size={90}/>
-              <RingChart pct={62} color="#facc15" label="Security Score" size={90}/>
-            </>}
-          </div>
+        <div className="p-5">
+          <InteractiveBarChart
+            data={last14.map((d, i) => ({ date: d.date, value: chartValues[i] ?? 0 }))}
+            color={chartColor}
+            label={chartTab === "volume" ? "XLM" : chartTab === "dau" ? "users" : "txns"} />
         </div>
       </div>
 
       {/* Users Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Top Users */}
-        <div className="bg-white/[0.02] border border-white/[0.07] rounded-2xl p-6">
-          <h3 className="text-sm font-black uppercase tracking-[0.15em] text-white/60 mb-4">🏆 Top Users · 30 Days</h3>
-          <div className="space-y-2">
-            {topUsers.length===0 && <p className="text-white/20 text-sm text-center py-6">No data yet — make some transactions!</p>}
-            {topUsers.map((u,i) => {
-              const pct = topUsers[0]?.tx_count > 0 ? (u.tx_count/topUsers[0].tx_count)*100 : 0;
-              const medals = ["🥇","🥈","🥉"];
-              return (
-                <motion.div key={u.universal_id} initial={{opacity:0,x:-20}} animate={{opacity:1,x:0}} transition={{delay:i*0.06}}
-                  className="group p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05] hover:border-[#C694F9]/20 transition-all cursor-pointer">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-lg">{medals[i] || `#${i+1}`}</span>
-                    <span className="font-black text-sm text-[#C694F9]">{u.universal_id}@expo</span>
-                    <span className="ml-auto text-xs font-black text-white/50">{u.tx_count} txs</span>
+        <div className="bg-white/[0.02] border border-white/[0.07] rounded-2xl p-5">
+          <h3 className="text-sm font-bold text-white mb-4">🏆 Top Users · 30 Days</h3>
+          {topUsers.length === 0
+            ? <p className="text-white/20 text-sm text-center py-6">No transaction data yet</p>
+            : <div className="space-y-2">
+              {topUsers.map((u, i) => {
+                const pct = topUsers[0]?.tx_count > 0 ? (u.tx_count / topUsers[0].tx_count) * 100 : 0;
+                return (
+                  <div key={u.universal_id} className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base w-5 shrink-0">{["🥇","🥈","🥉"][i] ?? `#${i+1}`}</span>
+                      <span className="font-semibold text-sm text-[#C694F9] flex-1 truncate">{u.universal_id}@expo</span>
+                      <span className="text-xs font-bold text-white/50 shrink-0">{u.tx_count} txs</span>
+                    </div>
+                    <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                      <motion.div className="h-full rounded-full" style={{background:`linear-gradient(to right, #C694F9, #94A1F9)`}}
+                        initial={{width:0}} animate={{width:`${pct}%`}} transition={{delay:0.2+i*0.05,duration:0.8}} />
+                    </div>
                   </div>
-                  <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                    <motion.div className="h-full rounded-full bg-gradient-to-r from-[#C694F9] to-[#94A1F9]"
-                      initial={{width:0}} animate={{width:`${pct}%`}} transition={{delay:0.3+i*0.06,duration:0.8}}/>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>}
         </div>
 
         {/* Recent Signups */}
-        <div className="bg-white/[0.02] border border-white/[0.07] rounded-2xl p-6">
-          <h3 className="text-sm font-black uppercase tracking-[0.15em] text-white/60 mb-4">✨ Recent Signups</h3>
-          <div className="space-y-2">
-            {signups.length===0 && <p className="text-white/20 text-sm text-center py-6">No signups yet</p>}
-            {signups.map((u,i) => (
-              <motion.div key={u.universal_id} initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} transition={{delay:i*0.06}}
-                className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05] hover:border-white/10 transition-all cursor-pointer group">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C694F9]/30 to-[#94A1F9]/30 border border-[#C694F9]/20 flex items-center justify-center text-[10px] font-black text-[#C694F9]">
-                  {(u.full_name||u.universal_id||"?")[0].toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-black text-sm truncate">{u.full_name||u.universal_id}</p>
-                  <p className="text-[10px] text-white/40 font-bold">{u.universal_id}@expo</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-[10px] text-white/40 font-bold">{new Date(u.created_at).toLocaleDateString()}</p>
-                  <p className="text-[9px] font-black px-2 py-0.5 rounded-full bg-[#C694F9]/10 text-[#C694F9] mt-0.5">{u.preferred_currency||"XLM"}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Platform Health Bar */}
-      <div className="bg-gradient-to-r from-[#C694F9]/10 via-[#94A1F9]/5 to-transparent border border-[#C694F9]/20 rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <h3 className="text-sm font-black uppercase tracking-[0.15em] text-white/60">Platform Health</h3>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"/>
-            <span className="text-xs font-black text-green-400">All Systems Operational</span>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[
-            {label:"Stellar Testnet", status:"Online", color:"#4ade80"},
-            {label:"Supabase DB", status:"Online", color:"#4ade80"},
-            {label:"Fee Sponsorship", status:"Active ⚡", color:"#C694F9"},
-            {label:"Email Alerts", status:"Resend OK", color:"#4ade80"},
-          ].map(s => (
-            <div key={s.label} className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.05] text-center">
-              <div className="w-2 h-2 rounded-full mx-auto mb-2 animate-pulse" style={{background:s.color}}/>
-              <p className="text-[10px] font-black uppercase tracking-wider text-white/40">{s.label}</p>
-              <p className="text-xs font-black mt-1" style={{color:s.color}}>{s.status}</p>
-            </div>
-          ))}
+        <div className="bg-white/[0.02] border border-white/[0.07] rounded-2xl p-5">
+          <h3 className="text-sm font-bold text-white mb-4">✨ Recent Signups</h3>
+          {signups.length === 0
+            ? <p className="text-white/20 text-sm text-center py-6">No signups yet</p>
+            : <div className="space-y-2">
+              {signups.map((u, i) => (
+                <motion.div key={u.universal_id} initial={{opacity:0,x:16}} animate={{opacity:1,x:0}} transition={{delay:i*0.05}}
+                  className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-all">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                    style={{background:"#C694F9" + "22", border:"1px solid #C694F920", color:"#C694F9"}}>
+                    {(u.full_name || u.universal_id || "?")[0].toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate text-white">{u.full_name || u.universal_id}</p>
+                    <p className="text-[10px] text-white/35 font-medium">{u.universal_id}@expo</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[10px] text-white/35">{new Date(u.created_at).toLocaleDateString()}</p>
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{background:"#C694F918",color:"#C694F9"}}>
+                      {u.preferred_currency || "XLM"}
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>}
         </div>
       </div>
     </div>
