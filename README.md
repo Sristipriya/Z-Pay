@@ -18,25 +18,6 @@ ExpoPay turns wallet addresses into human-readable Universal IDs (`alice@expo`),
 
 </div>
 
----
-
-## 🥋 Black Belt Submission (Level 6)
-
-> **Live Demo:** [exporouter.site](https://exporouter.site) &nbsp;·&nbsp; **30+ Active Users Verified on Stellar Testnet**
-
-### Deliverables
-
-| Requirement | Status | Link |
-|-------------|--------|------|
-| 30+ verified active users | ✅ | [User Wallet Addresses](#30-user-wallet-addresses) |
-| Metrics Dashboard (DAU, Transactions, Retention) | ✅ | [/dashboard/admin/metrics](https://exporouter.site/dashboard/admin/metrics) |
-| Security Checklist Completed | ✅ | [SECURITY.md](./SECURITY.md) |
-| Monitoring Active | ✅ | [/dashboard/admin/monitoring](https://exporouter.site/dashboard/admin/monitoring) |
-| Data Indexing Implemented | ✅ | [supabase_blackbelt_migration.sql](./supabase_blackbelt_migration.sql) |
-| Full Documentation | ✅ | [docs/TECHNICAL.md](./docs/TECHNICAL.md) · [docs/USER_GUIDE.md](./docs/USER_GUIDE.md) |
-| Community Contribution | ✅ | [Twitter/X Post](#community-contribution) |
-| Advanced Feature: Fee Sponsorship ⚡ | ✅ | [Fee Bump Implementation](#advanced-feature-fee-sponsorship) |
-| Minimum 15+ meaningful commits | ✅ | [View commits](https://github.com/Div1912/ExpoPay/commits/main) |
 
 ### Advanced Feature: Fee Sponsorship (Gasless Transactions)
 
@@ -54,24 +35,24 @@ ExpoPay implements **Stellar fee_bump_transaction** so the platform sponsors XLM
 
 ### Metrics Dashboard
 
-Live dashboard at `/dashboard/admin/metrics` showing:
+Live dashboard  showing:
 - **DAU** (daily active users — last 14 days bar chart)
 - **Retention rate** (week-over-week cohort analysis)
 - **Transaction volume** (30-day daily bar chart)
 - **Top users** by activity (30d)
 - **Gasless transaction count**
 
-📸 *(Add screenshot of metrics dashboard)*
+![Metric Dashboard live](./screenshots/Metric.png)
 
 ### Production Monitoring
 
-Real-time log stream at `/dashboard/admin/monitoring`:
+Real-time log stream  showing :
 - Structured event log from all API routes (level: info/warn/error)
 - **Live Supabase subscription** — new events appear instantly without refresh
 - Hourly error rate chart (last 12h)
 - Filterable by log level
 
-📸 *(Add screenshot of monitoring dashboard)*
+![Metric Dashboard live](./screenshots/Monitoring.png)
 
 ### Security Checklist
 
@@ -233,7 +214,7 @@ Every push runs the `ci.yml` workflow: typecheck, lint, build, contract test sui
 
 ![CI passing](./screenshots/ci-passing.png)
 
-![Metric Dashboard live](./screenshots/Metric.png)
+
 
 ---
 
