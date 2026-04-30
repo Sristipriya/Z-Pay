@@ -149,7 +149,7 @@ ExpoPay implements **Stellar fee_bump_transaction** so the platform sponsors XLM
 
 **Proof:** 
 
-![Metric Dashboard live](./screenshots/Fee.png)
+![fee live](./screenshots/fee.png)
 
 
 
@@ -198,13 +198,13 @@ Indexes added:
 
 ### Community Contribution
 
-🐦 *(Add your Twitter/X post lin
+[X](https://x.com/raaz_divyanshu/status/2049812470660039009?s=20)
 
 
 
 ### User Onboarding Improvement Plan
 
-Based on user feedback collected via [Google Form](https://docs.google.com/spreadsheets/d/e/2PACX-1vR82azl8byhjpi6hAnn8naPIsU5H-I_TGDyDFqdP2jv7xJXpp5O1MSdHBfHmFYH0v7Bka2FSSyrEbS2/pubhtml):
+Based on user feedback collected via [Google Form](https://docs.google.com/spreadsheets/d/e/2PACX-1vR82azl8byhjpi6hAnn8naPIsU5H-I_TGDyDFqdP2jv7xJXpp5O1MSdHBfHmFYH0v7Bka2FSSyrEbS2/pubhtml?gid=224759150&single=true):
 
 1. **Simplified onboarding** — reduce steps from 5 to 3 · Commit: *(add link)*
 2. **Multi-language support** — Hindi/Spanish/French · Commit: *(add link)*
