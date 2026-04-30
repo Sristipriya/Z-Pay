@@ -203,6 +203,7 @@ function SendForm() {
   const [paymentResult, setPaymentResult] = useState<any>(null);
   const [pinError, setPinError] = useState("");
   const [senderCurrency, setSenderCurrency] = useState("USDC");
+  const [useGasless, setUseGasless] = useState(false);
 
   useEffect(() => {
     fetch("/api/expo/profile")
@@ -322,7 +323,7 @@ function SendForm() {
     setPinError("");
 
     try {
-      const res = await fetch("/api/payments/send", {
+      const res = await fetch(useGasless ? "/api/payments/gasless" : "/api/payments/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -570,18 +571,23 @@ function SendForm() {
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-4 pt-4">
-            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center gap-2 text-center">
-              <Shield className="w-5 h-5 text-blue-500" />
-              <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Secured</span>
+          <div 
+            className={cn("flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all", 
+              useGasless ? "bg-[#C694F9]/10 border-[#C694F9]/30" : "bg-white/5 border-white/10 hover:bg-white/10")}
+            onClick={() => setUseGasless(!useGasless)}
+          >
+            <div className="flex items-center gap-3">
+              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-colors", 
+                useGasless ? "bg-[#C694F9]/20" : "bg-white/10")}>
+                <Zap className={cn("w-5 h-5 transition-colors", useGasless ? "text-[#C694F9]" : "text-zinc-500")} />
+              </div>
+              <div>
+                <p className={cn("font-bold transition-colors", useGasless ? "text-[#C694F9]" : "text-white")}>Gasless Transaction ⚡</p>
+                <p className="text-xs text-zinc-500">Platform pays the Stellar network fee</p>
+              </div>
             </div>
-            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center gap-2 text-center">
-              <Globe className="w-5 h-5 text-purple-500" />
-              <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Global</span>
-            </div>
-            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center gap-2 text-center">
-              <Zap className="w-5 h-5 text-yellow-500" />
-              <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Instant</span>
+            <div className={cn("w-12 h-6 rounded-full p-1 transition-colors", useGasless ? "bg-[#C694F9]" : "bg-zinc-700")}>
+              <div className={cn("w-4 h-4 rounded-full bg-white transition-transform", useGasless ? "translate-x-6" : "translate-x-0")} />
             </div>
           </div>
 
