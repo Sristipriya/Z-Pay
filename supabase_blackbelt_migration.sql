@@ -34,8 +34,8 @@ CREATE INDEX IF NOT EXISTS idx_transactions_sender_created
 CREATE INDEX IF NOT EXISTS idx_transactions_recipient_created
   ON transactions (recipient_id, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_transactions_created_date
-  ON transactions (date(created_at));
+CREATE INDEX IF NOT EXISTS idx_transactions_created_at
+  ON transactions (created_at DESC);
 
 -- Contracts: lookup by participant and status
 CREATE INDEX IF NOT EXISTS idx_contracts_payer_created
