@@ -57,7 +57,7 @@ ExpoPay is currently deployed on Stellar Testnet. This document outlines impleme
 ## Reporting Security Issues
 
 Please report security vulnerabilities by email rather than opening a public GitHub issue.  
-Contact: [your-security-email@example.com]
+Contact: [expopay8@gmail.com]
 
 ---
 
