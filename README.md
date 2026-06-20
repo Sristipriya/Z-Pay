@@ -48,7 +48,7 @@ Zpay turns wallet addresses into human-readable Universal IDs (`alice@Zp`), sett
 
 The home of the app — wallet balance, recent transactions, quick actions for Send/Scan/Split/Vault.
 
-<img width="320" alt="Dashboard overview" src="./screenshots/mobile-view.png" />
+<img width="320" alt="Dashboard overview" src="./screenshots/Dashboard overview.png" />
 
 ### 2 · Pay Indian merchants with crypto
 
