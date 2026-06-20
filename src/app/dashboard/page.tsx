@@ -292,16 +292,7 @@ export default function DashboardPage() {
                         ≈ {parseFloat(xlmBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} XLM on Stellar
                       </p>
                     )}
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 pt-2 sm:pt-4">
-                    <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 bg-white/5 rounded-full border border-white/5 shrink-0">
-                      <Zap className="w-2.5 sm:w-3 h-2.5 sm:h-3 text-yellow-500" />
-                      <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-white/40">Instant Settlement</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 bg-white/5 rounded-full border border-white/5 shrink-0">
-                      <Shield className="w-2.5 sm:w-3 h-2.5 sm:h-3 text-[#D4AF37]" />
-                      <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-white/40">On-Chain Secured</span>
-                    </div>
-                  </div>
+
                 </div>
   
                 <div className="flex flex-col sm:flex-row lg:flex-col gap-3 sm:gap-4 w-full lg:w-auto lg:min-w-[240px] xl:min-w-[280px]">

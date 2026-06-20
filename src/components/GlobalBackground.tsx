@@ -14,7 +14,6 @@ export default function GlobalBackground() {
     <div className="fixed inset-0 z-[0] pointer-events-none mix-blend-screen opacity-80">
       <EtheralShadow
         color="rgba(198, 148, 249, 0.5)"
-        animation={{ scale: 100, speed: 90 }}
         noise={{ opacity: 0.8, scale: 1.2 }}
         sizing="fill"
       />
