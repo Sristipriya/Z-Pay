@@ -8,9 +8,8 @@
  * Stellar docs: https://developers.stellar.org/docs/encyclopedia/fee-bump-transactions
  */
 import * as StellarSdk from '@stellar/stellar-sdk';
-import { horizonServer } from './stellar';
+import { horizonServer, NETWORK_PASSPHRASE } from './stellar';
 
-const NETWORK_PASSPHRASE = StellarSdk.Networks.TESTNET;
 const PLATFORM_SECRET = process.env.PLATFORM_SECRET_KEY!;
 
 export interface GaslessPaymentParams {
@@ -72,7 +71,6 @@ export async function sendGaslessPayment(
   innerTx.sign(senderKeypair);
 
   // 4. Wrap in a fee bump — platform pays the fee
-  // Fee bump fee must be ≥ inner_tx_fee * (inner_tx_ops + 1)
   const feeBumpFee = (parseInt(StellarSdk.BASE_FEE) * 10).toString();
 
   const feeBumpTx = StellarSdk.TransactionBuilder.buildFeeBumpTransaction(
@@ -98,7 +96,6 @@ export async function sendGaslessPayment(
 
 /**
  * Checks if the platform wallet has sufficient XLM to sponsor fees.
- * Returns false if the platform balance is critically low (<10 XLM).
  */
 export async function canSponsorFees(): Promise<boolean> {
   if (!PLATFORM_SECRET) return false;

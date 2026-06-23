@@ -1,13 +1,8 @@
 import * as StellarSdk from '@stellar/stellar-sdk';
+import { NETWORK_PASSPHRASE, server } from './stellar';
 
-const { Server } = StellarSdk.rpc;
-
-const SOROBAN_RPC_URL      = process.env.SOROBAN_RPC_URL      || 'https://soroban-testnet.stellar.org';
-const NETWORK_PASSPHRASE   = process.env.STELLAR_NETWORK_PASSPHRASE || StellarSdk.Networks.TESTNET;
-const STAKING_CONTRACT_ID  = process.env.STAKING_CONTRACT_ID  || '';
-const POOL_CONTRACT_ID     = process.env.POOL_CONTRACT_ID     || '';
-
-const server = new Server(SOROBAN_RPC_URL);
+const STAKING_CONTRACT_ID = process.env.STAKING_CONTRACT_ID || '';
+const POOL_CONTRACT_ID    = process.env.POOL_CONTRACT_ID    || '';
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 async function buildAndPrepare(

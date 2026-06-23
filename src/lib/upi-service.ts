@@ -30,7 +30,7 @@ export function parseUPIQRCode(qrData: string): ParsedUPIQR {
 
   try {
     const trimmedData = qrData.trim();
-    
+
     // Handle direct UPI ID (contains @)
     if (!trimmedData.toLowerCase().startsWith('upi://') && trimmedData.includes('@')) {
       result.merchantUpiId = trimmedData;
@@ -41,27 +41,31 @@ export function parseUPIQRCode(qrData: string): ParsedUPIQR {
 
     // Handle UPI URL format
     if (trimmedData.toLowerCase().startsWith('upi://')) {
-      // Parse UPI URL - handle both upi://pay? and upi://? formats
       const queryStart = trimmedData.indexOf('?');
       if (queryStart === -1) {
         return result;
       }
-      
+
       const queryString = trimmedData.substring(queryStart + 1);
       const params = new URLSearchParams(queryString);
 
       result.merchantUpiId = params.get('pa') || '';
-      result.merchantName = decodeURIComponent(params.get('pn') || '') || params.get('pa')?.split('@')[0] || 'Merchant';
+      result.merchantName =
+        decodeURIComponent(params.get('pn') || '') ||
+        params.get('pa')?.split('@')[0] ||
+        'Merchant';
       result.merchantCategory = params.get('mc') || undefined;
-      
+
       const amount = params.get('am');
       if (amount) {
         result.amount = parseFloat(amount);
       }
-      
-      result.transactionNote = decodeURIComponent(params.get('tn') || '') || undefined;
-      result.isValid = !!result.merchantUpiId && result.merchantUpiId.includes('@');
-      
+
+      result.transactionNote =
+        decodeURIComponent(params.get('tn') || '') || undefined;
+      result.isValid =
+        !!result.merchantUpiId && result.merchantUpiId.includes('@');
+
       return result;
     }
 
@@ -73,7 +77,6 @@ export function parseUPIQRCode(qrData: string): ParsedUPIQR {
       result.isValid = true;
       return result;
     }
-
   } catch (error) {
     console.error('UPI QR parsing error:', error);
   }
@@ -81,7 +84,16 @@ export function parseUPIQRCode(qrData: string): ParsedUPIQR {
   return result;
 }
 
-export async function simulateUPISettlement(
+/**
+ * UPI Settlement — COMING SOON
+ *
+ * Real UPI payouts require integration with a licensed Payment Aggregator
+ * (e.g., Cashfree Payouts, Razorpay X, PayU). This feature is currently
+ * disabled on mainnet and will be enabled in Phase 2.
+ *
+ * DO NOT call this in production flows — it throws to prevent accidental use.
+ */
+export async function processUPISettlement(
   merchantUpiId: string,
   merchantName: string,
   amountINR: number
@@ -91,16 +103,23 @@ export async function simulateUPISettlement(
   settlementTime: string;
   message: string;
 }> {
-  await new Promise(resolve => setTimeout(resolve, 1500));
+  // Safety guard: never silently succeed with fake data on mainnet
+  throw new Error(
+    'UPI merchant settlement is not yet available. ' +
+    'This feature requires a licensed Payment Aggregator integration (Phase 2).'
+  );
+}
 
-  const utrNumber = `UTR${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-  
-  return {
-    success: true,
-    utrNumber,
-    settlementTime: new Date().toISOString(),
-    message: `₹${amountINR.toLocaleString('en-IN')} credited to ${merchantName} (${merchantUpiId}) via partner settlement`,
-  };
+/**
+ * @deprecated Use processUPISettlement — the simulate* name was misleading.
+ * Kept for backwards compatibility with existing imports; now throws the same error.
+ */
+export async function simulateUPISettlement(
+  merchantUpiId: string,
+  merchantName: string,
+  amountINR: number
+) {
+  return processUPISettlement(merchantUpiId, merchantName, amountINR);
 }
 
 export function generateUPIDeepLink(params: {
@@ -116,6 +135,6 @@ export function generateUPIDeepLink(params: {
   if (params.am) upiUrl.searchParams.set('am', params.am.toString());
   if (params.tn) upiUrl.searchParams.set('tn', params.tn);
   upiUrl.searchParams.set('cu', params.cu || 'INR');
-  
+
   return upiUrl.toString();
 }

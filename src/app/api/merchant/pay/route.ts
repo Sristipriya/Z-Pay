@@ -1,14 +1,28 @@
 import { NextResponse } from 'next/server';
 import { getUser } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { sendMerchantPayment } from '@/lib/stellar';
-import { simulateUPISettlement } from '@/lib/upi-service';
+import { sendMerchantPayment, getExplorerUrl, IS_MAINNET } from '@/lib/stellar';
 import { notifyMerchantPayment } from '@/lib/notify';
 
 export async function POST(request: Request) {
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // UPI merchant settlement is coming in Phase 2.
+  // On mainnet, we block this endpoint to prevent XLM being debited
+  // without a real INR payout reaching the merchant.
+  if (IS_MAINNET) {
+    return NextResponse.json(
+      {
+        error:
+          'Merchant UPI payments are coming soon. ' +
+          'This feature will be available once we integrate a licensed Payment Aggregator (Phase 2).',
+        coming_soon: true,
+      },
+      { status: 503 }
+    );
   }
 
   const { quote_id, merchant_name, merchant_upi_id, pin } = await request.json();
@@ -58,8 +72,8 @@ export async function POST(request: Request) {
 
   try {
     const xlmAmount = parseFloat(quote.xlm_amount).toFixed(7);
-    
-    // Execute REAL Stellar transaction - XLM is debited from user wallet
+
+    // Execute REAL Stellar transaction — XLM is debited from user wallet
     const txHash = await sendMerchantPayment(
       profile.stellar_secret,
       xlmAmount,
@@ -71,11 +85,7 @@ export async function POST(request: Request) {
       .update({ used: true })
       .eq('id', quote_id);
 
-    const settlement = await simulateUPISettlement(
-      merchant_upi_id,
-      merchant_name,
-      parseFloat(quote.inr_amount)
-    );
+    const explorerUrl = getExplorerUrl(txHash);
 
     const { data: payment, error: paymentError } = await supabaseAdmin
       .from('merchant_payments')
@@ -87,9 +97,10 @@ export async function POST(request: Request) {
         xlm_amount: quote.xlm_amount,
         exchange_rate: quote.rate,
         tx_hash: txHash,
-        stellar_explorer_url: `https://stellar.expert/explorer/testnet/tx/${txHash}`,
+        stellar_explorer_url: explorerUrl,
         status: 'completed',
-        settlement_status: 'settled',
+        // Testnet only: settlement is simulated. On mainnet this will be handled by Phase 2 aggregator.
+        settlement_status: 'pending',
       })
       .select()
       .single();
@@ -114,21 +125,22 @@ export async function POST(request: Request) {
       success: true,
       payment_id: payment?.id,
       tx_hash: txHash,
-      stellar_explorer_url: `https://stellar.expert/explorer/testnet/tx/${txHash}`,
+      stellar_explorer_url: explorerUrl,
       inr_amount: quote.inr_amount,
       xlm_amount: parseFloat(quote.xlm_amount).toFixed(4),
       merchant_name,
       merchant_upi_id,
       settlement: {
-        status: 'settled',
-        utr_number: settlement.utrNumber,
-        message: settlement.message,
+        // Testnet mode: simulated settlement for testing
+        status: 'simulated',
+        utr_number: `UTR${Date.now()}`,
+        message: `[TESTNET] ₹${quote.inr_amount} simulated settlement for ${merchant_name}`,
       },
     });
   } catch (error: any) {
     console.error('Merchant payment error:', error);
-    return NextResponse.json({ 
-      error: error.message || 'Payment failed. Please try again.' 
+    return NextResponse.json({
+      error: error.message || 'Payment failed. Please try again.',
     }, { status: 500 });
   }
 }

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
-import { Check, Loader2, Shield, ArrowRight, ExternalLink, Sparkles, AlertCircle, User, Phone, Lock, Coins, Globe, Camera } from "lucide-react";
+import { Check, Loader2, Shield, ArrowRight, ExternalLink, Sparkles, AlertCircle, User, Phone, Lock, Coins, Globe, Camera, Copy, CheckCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Logo } from "@/components/ui/Logo";
@@ -58,6 +58,8 @@ export default function OnboardingPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [txHash, setTxHash] = useState("");
+  const [stellarAddress, setStellarAddress] = useState("");
+  const [copiedAddress, setCopiedAddress] = useState(false);
   const router = useRouter();
 
   const mouseX = useMotionValue(0);
@@ -181,6 +183,7 @@ export default function OnboardingPage() {
         setError(data.error);
       } else {
         setTxHash(data.tx_hash);
+        setStellarAddress(data.stellar_address || '');
         setSuccess(true);
       }
     } catch (err) {
@@ -225,22 +228,47 @@ export default function OnboardingPage() {
           <p className="text-white/50 mb-6 sm:mb-8 text-sm sm:text-base">
             Welcome to ZPAY, <span className="text-white font-black">{fullName}</span>. Your universal identity <span className="text-white font-black">{username}@Zp</span> is now live.
           </p>
-          
+
+          {/* Fund wallet notice for mainnet */}
+          {stellarAddress && (
+            <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30">
+              <p className="text-amber-400 text-xs font-black uppercase tracking-widest mb-2">⚡ Activate Your Wallet</p>
+              <p className="text-white/60 text-xs mb-3">
+                Send at least <span className="text-white font-bold">1 XLM</span> to this address to activate your wallet:
+              </p>
+              <div className="flex items-center gap-2 bg-black/40 rounded-xl p-3">
+                <code className="text-[10px] text-amber-300 font-mono flex-1 break-all">{stellarAddress}</code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(stellarAddress);
+                    setCopiedAddress(true);
+                    setTimeout(() => setCopiedAddress(false), 2000);
+                  }}
+                  className="shrink-0 text-white/40 hover:text-white transition-colors"
+                >
+                  {copiedAddress
+                    ? <CheckCircle className="w-4 h-4 text-green-400" />
+                    : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3 sm:space-y-4">
-            <Button 
+            <Button
               onClick={() => router.push("/dashboard")}
               className="w-full h-12 sm:h-14 md:h-16 bg-white text-black hover:bg-white/90 text-base sm:text-lg md:text-xl font-black rounded-full shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               EXPLORE DASHBOARD <ArrowRight className="ml-2 w-5 sm:w-6 h-5 sm:h-6" />
             </Button>
             {txHash && (
-                <Link 
-                    href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
-                    target="_blank"
-                    className="flex items-center justify-center gap-2 text-white/30 hover:text-white transition-all text-[10px] font-bold uppercase tracking-widest"
-                >
-                    Soroban Identity Receipt <ExternalLink className="w-3 h-3" />
-                </Link>
+              <Link
+                href={`https://stellar.expert/explorer/public/tx/${txHash}`}
+                target="_blank"
+                className="flex items-center justify-center gap-2 text-white/30 hover:text-white transition-all text-[10px] font-bold uppercase tracking-widest"
+              >
+                Identity Receipt <ExternalLink className="w-3 h-3" />
+              </Link>
             )}
           </div>
         </motion.div>

@@ -8,10 +8,36 @@ import { logInfo, logError, logWarn } from '@/lib/logger';
 
 const ROUTE = '/api/payments/send';
 
+// Daily send limit per user (in XLM). Approx ₹50,000 at current rates.
+const DAILY_LIMIT_XLM = 3000;
+
+// In-memory rate limiter: max 10 requests per user per minute
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(userId);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 10) return false;
+  entry.count++;
+  return true;
+}
+
 export async function POST(request: Request) {
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Rate limiting: max 10 payment attempts per user per minute
+  if (!checkRateLimit(user.id)) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please wait a minute before trying again.' },
+      { status: 429 }
+    );
   }
 
   const { recipient, amount, note, pin, purpose, currency } = await request.json();
@@ -78,6 +104,27 @@ export async function POST(request: Request) {
     const sourceCurrency = currency || senderProfile.preferred_currency || 'XLM';
     const xlmRate = await getExchangeRate(sourceCurrency, 'XLM');
     const xlmAmount = (parseFloat(amount) * xlmRate).toFixed(7);
+
+    // Daily limit check: sum today's outgoing XLM and enforce cap
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const { data: todayTxs } = await supabaseAdmin
+      .from('transactions')
+      .select('note')
+      .eq('sender_id', senderProfile.id)
+      .gte('created_at', todayStart.toISOString());
+
+    const todayXlmSent = (todayTxs || []).reduce((sum, tx) => {
+      const match = tx.note?.match(/^XLM:(\d+\.?\d*)/);
+      return sum + (match ? parseFloat(match[1]) : 0);
+    }, 0);
+
+    if (todayXlmSent + parseFloat(xlmAmount) > DAILY_LIMIT_XLM) {
+      return NextResponse.json(
+        { error: `Daily send limit reached (${DAILY_LIMIT_XLM} XLM). Try again tomorrow.` },
+        { status: 400 }
+      );
+    }
 
     const senderName = senderProfile.universal_id || 'unknown';
     const recipientName = recipientProfile?.universal_id || recipient.replace('@Zp', '');

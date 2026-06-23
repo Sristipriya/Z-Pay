@@ -63,6 +63,7 @@ interface FeeBreakdown {
 }
 
 export default function MerchantPayPage() {
+  const IS_MAINNET = process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet';
   const [step, setStep] = useState<'home' | 'scan' | 'manual' | 'amount' | 'confirm' | 'pin' | 'processing' | 'success'>('home');
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);

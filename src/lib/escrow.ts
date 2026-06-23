@@ -1,13 +1,8 @@
 import * as StellarSdk from '@stellar/stellar-sdk';
+import { NETWORK_PASSPHRASE, server } from './stellar';
 
-const { Server } = StellarSdk.rpc;
-
-const SOROBAN_RPC_URL = process.env.SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org';
-const NETWORK_PASSPHRASE = process.env.STELLAR_NETWORK_PASSPHRASE || StellarSdk.Networks.TESTNET;
-const CONTRACT_ID = process.env.ESCROW_CONTRACT_ID || 'CAGMD6PBDSOSB2NDOE5ZGYCWH74EOBJFHM627WTGLZZF66DBRUFWYSPT';
-const TOKEN_CONTRACT_ID = process.env.TOKEN_CONTRACT_ID || 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
-
-const server = new Server(SOROBAN_RPC_URL);
+const CONTRACT_ID       = process.env.ESCROW_CONTRACT_ID  || '';
+const TOKEN_CONTRACT_ID = process.env.TOKEN_CONTRACT_ID   || '';
 
 export type EscrowStatus = 'Funded' | 'Delivered' | 'Released' | 'Disputed' | 'Refunded';
 

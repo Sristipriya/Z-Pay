@@ -1,4 +1,28 @@
-const MOCK_RATES: Record<string, number> = {
+// ─── FX Service ───────────────────────────────────────────────────────────────
+// Live exchange rates via CoinGecko free API (no API key required).
+// Falls back to cached/hardcoded rates if the API is unavailable.
+// Cache TTL: 60 seconds to avoid rate limiting.
+
+export type SupportedCurrency = 'XLM' | 'USDC' | 'INR' | 'USD' | 'EUR' | 'GBP';
+
+export interface FXQuote {
+  id?: string;
+  from_currency: string;
+  to_currency: string;
+  rate: number;
+  source_amount: number;
+  target_amount: number;
+  expires_at: string;
+  seconds_remaining: number;
+}
+
+// ─── In-memory cache ──────────────────────────────────────────────────────────
+let cachedRates: Record<string, number> | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 60_000; // 60 seconds
+
+// Fallback rates (used if CoinGecko is unreachable)
+const FALLBACK_RATES: Record<string, number> = {
   'XLM_INR': 13.52,
   'XLM_USD': 0.16,
   'XLM_EUR': 0.15,
@@ -14,34 +38,81 @@ const MOCK_RATES: Record<string, number> = {
   'GBP_INR': 105.60,
 };
 
-export type SupportedCurrency = 'XLM' | 'USDC' | 'INR' | 'USD' | 'EUR' | 'GBP';
+/**
+ * Fetches live rates from CoinGecko free API and builds a normalised rates map.
+ * CoinGecko free tier: 30 calls/min — safe with 60s cache.
+ */
+async function fetchLiveRates(): Promise<Record<string, number>> {
+  try {
+    const url =
+      'https://api.coingecko.com/api/v3/simple/price?ids=stellar%2Cusd-coin&vs_currencies=inr%2Cusd%2Ceur%2Cgbp';
 
-export interface FXQuote {
-  id?: string;
-  from_currency: string;
-  to_currency: string;
-  rate: number;
-  source_amount: number;
-  target_amount: number;
-  expires_at: string;
-  seconds_remaining: number;
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json' },
+      // Next.js fetch caching: revalidate every 60s on the server side too
+      next: { revalidate: 60 },
+    } as RequestInit);
+
+    if (!res.ok) throw new Error(`CoinGecko HTTP ${res.status}`);
+
+    const data = await res.json();
+
+    // data shape:
+    // { stellar: { inr: 13.5, usd: 0.16, eur: 0.15, gbp: 0.13 },
+    //   'usd-coin': { inr: 83.5, usd: 1.0, eur: 0.92, gbp: 0.79 } }
+
+    const xlm = data['stellar'] || {};
+    const usdc = data['usd-coin'] || {};
+
+    const rates: Record<string, number> = {
+      'XLM_INR':  xlm.inr  || FALLBACK_RATES['XLM_INR'],
+      'XLM_USD':  xlm.usd  || FALLBACK_RATES['XLM_USD'],
+      'XLM_EUR':  xlm.eur  || FALLBACK_RATES['XLM_EUR'],
+      'XLM_GBP':  xlm.gbp  || FALLBACK_RATES['XLM_GBP'],
+      'USDC_INR': usdc.inr || FALLBACK_RATES['USDC_INR'],
+      'USDC_USD': usdc.usd || FALLBACK_RATES['USDC_USD'],
+      'USDC_EUR': usdc.eur || FALLBACK_RATES['USDC_EUR'],
+      'USDC_GBP': usdc.gbp || FALLBACK_RATES['USDC_GBP'],
+    };
+
+    // Derive inverses
+    for (const [key, rate] of Object.entries(rates)) {
+      if (rate > 0) {
+        const [from, to] = key.split('_');
+        const reverseKey = `${to}_${from}`;
+        if (!rates[reverseKey]) {
+          rates[reverseKey] = 1 / rate;
+        }
+      }
+    }
+
+    return rates;
+  } catch (err) {
+    console.error('[fx-service] CoinGecko fetch failed, using fallback rates:', err);
+    return FALLBACK_RATES;
+  }
+}
+
+async function getRates(): Promise<Record<string, number>> {
+  const now = Date.now();
+  if (cachedRates && now - cacheTimestamp < CACHE_TTL_MS) {
+    return cachedRates;
+  }
+  cachedRates = await fetchLiveRates();
+  cacheTimestamp = now;
+  return cachedRates;
 }
 
 export async function getExchangeRate(from: string, to: string): Promise<number> {
   if (from === to) return 1;
-  
+
+  const rates = await getRates();
   const key = `${from}_${to}`;
   const reverseKey = `${to}_${from}`;
-  
-  if (MOCK_RATES[key]) {
-    const variance = (Math.random() - 0.5) * 0.002;
-    return MOCK_RATES[key] * (1 + variance);
-  }
-  
-  if (MOCK_RATES[reverseKey]) {
-    return 1 / (MOCK_RATES[reverseKey] * (1 + (Math.random() - 0.5) * 0.002));
-  }
-  
+
+  if (rates[key]) return rates[key];
+  if (rates[reverseKey]) return 1 / rates[reverseKey];
+
   return 1;
 }
 
@@ -84,11 +155,14 @@ export function formatCurrency(amount: number, currency: string): string {
     XLM: '',
     USDC: '$',
   };
-  
+
   const symbol = symbols[currency] || '';
-  const decimals = ['INR', 'XLM'].includes(currency) ? 2 : 2;
-  
-  return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+  const decimals = 2;
+
+  return `${symbol}${amount.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })}`;
 }
 
 export function getSupportedCurrencies() {
